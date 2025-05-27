@@ -36,7 +36,7 @@ if $gensim; then
 
     if [ ! -f data/$dir_name/$genSimRoot ]; then
         echo "Starting step 0: GEN-SIM"
-        cmsRun simulate_rhadron_decays.py maxEvents=$events outputFile=data/$dir_name/$genSimRoot
+        cmsRun simulate_rhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot
         echo "Step 0 completed"
     fi
 

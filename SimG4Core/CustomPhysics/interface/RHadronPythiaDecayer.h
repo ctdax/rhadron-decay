@@ -5,7 +5,7 @@
 #ifndef RHadronPythiaDecayer_H
 #define RHadronPythiaDecayer_H
 
-#include "G4ExternalDecay/Pythia8ForDecays.h"
+#include "Generators/Pythia8ForDecays.h"
 
 #include "G4VExtDecayer.hh"
 #include "G4Track.hh"
