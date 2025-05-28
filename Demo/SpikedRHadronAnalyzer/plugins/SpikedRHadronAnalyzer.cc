@@ -411,7 +411,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
     edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find SimVertex in event!";
     return;
   }
-
+/*
   // Combine tracker simhit containers
   edm::PSimHitContainer G4SimHitContainer;
   G4SimHitContainer.insert(G4SimHitContainer.end(), SiTIBLowContainer->begin(), SiTIBLowContainer->end());
@@ -626,7 +626,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
+    */
 }
-
 //define this as a plug-in
 DEFINE_FWK_MODULE(SpikedRHadronAnalyzer);

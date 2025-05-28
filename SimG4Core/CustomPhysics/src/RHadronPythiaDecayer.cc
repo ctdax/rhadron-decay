@@ -3,7 +3,7 @@
 */
 
 // Header for my class
-#include "RHadronPythiaDecayer.h"
+#include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayer.h"
 
 // The actual decayers.  Singleton classes, not toolhandles
 

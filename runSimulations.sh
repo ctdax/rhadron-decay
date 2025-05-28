@@ -13,7 +13,7 @@ events=1
 cmEnergy="13TeV"
 prefix="test_v1.00"
 gensim=true
-eventdisplay=true # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
+eventdisplay=false # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
 
 # -------------------------------------
 

@@ -116,7 +116,7 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
             'SUSY:gg2gluinogluino = on', 
             'SUSY:qqbar2gluinogluino = on', 
             'RHadrons:allow  = on', 
-            'RHadrons:allowDecay = off', 
+            'RHadrons:allowDecay = on', 
             'RHadrons:setMasses = on', 
             'RHadrons:probGluinoball = 0.1'
         ),

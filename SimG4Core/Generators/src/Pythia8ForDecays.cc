@@ -5,17 +5,22 @@
 // Abused from Pythia6.cc in Geant4 extended examples
 
 // My own class definition
-#include "G4ExternalDecay/Pythia8ForDecays.h"
+#include "SimG4Core/Generators/interface/Pythia8ForDecays.h"
 
 // Helper functions for Pythia8 and Pythia8 classes
-#include "Pythia8_i/Pythia8_i.h"
+//#include "Pythia8_i/Pythia8_i.h"
+#include "Pythia8/Pythia.h"
+#include "GeneratorInterface/Pythia8Interface/interface/Py8InterfaceBase.h"
+//using namespace Pythia8;
 
 // Pythia8 RHadrons code that we call into
 #include "Pythia8/RHadrons.h"
 
 // HepMC for translation into format Pythia likes
-#include "AtlasHepMC/GenEvent.h"
-#include "AtlasHepMC/GenParticle.h"
+//#include "AtlasHepMC/GenEvent.h"
+//#include "AtlasHepMC/GenParticle.h"
+#include "HepMC/GenEvent.h"
+#include "HepMC/GenParticle.h"
 
 // G4 classes for translation into G4 format
 #include "G4ParticleDefinition.hh"
@@ -31,12 +36,19 @@ static inline unsigned short int nth_digit(const int& val,const unsigned short& 
 #include <cmath>
 #include <fstream>
 
+// Create a destructor for the Pythia8ForDecays class that deletes m_pythia
+Pythia8ForDecays::~Pythia8ForDecays()
+{
+  delete m_pythia; // Delete the Pythia8 instance
+}
 
 Pythia8ForDecays::Pythia8ForDecays()
   {
   // Pythia instance where RHadrons can decay
-  std::string docstring = Pythia8_i::xmlpath();
-  m_pythia = std::make_unique<Pythia8::Pythia>(docstring);
+  //std::string docstring = Pythia8_i::xmlpath();
+  //m_pythia = std::make_unique<Pythia8::Pythia>(docstring);
+  //m_pythia = std::make_unique<Pythia8::Pythia>();
+  m_pythia = new Pythia8::Pythia();
   m_pythia->readString("SLHA:file = SLHA_INPUT.DAT");
   m_pythia->readString("ProcessLevel:all = off");
   m_pythia->readString("Init:showChangedSettings = off");

@@ -14,19 +14,28 @@
 // For std::pair
 #include <utility>
 // For all the various Pythia8 classes used here
-#include "Pythia8_i/Pythia8_i.h"
+//#include "Pythia8/Pythia.h"
+//using namespace Pythia8;
 // For unique_ptr
 #include <memory>
-#include "CxxUtils/checker_macros.h"
+//#include "CxxUtils/checker_macros.h"
 
 class G4DynamicParticle;
 class G4ParticleDefinition;
 
-class ATLAS_NOT_THREAD_SAFE Pythia8ForDecays
+//class ATLAS_NOT_THREAD_SAFE 
+
+namespace Pythia8 {
+  class Pythia;
+  class Event;
+  class Rndm;
+}
+
+class Pythia8ForDecays
 {
   public:
    Pythia8ForDecays();
-   virtual ~Pythia8ForDecays() = default;
+   virtual ~Pythia8ForDecays();
 
    /// Function that decays the RHadron; returns products in G4 format
    void Py1ent(const G4Track&, std::vector<G4DynamicParticle*> &);
@@ -44,7 +53,7 @@ class ATLAS_NOT_THREAD_SAFE Pythia8ForDecays
    bool isGluinoRHadron(int pdgId) const;
 
    /// The instance of Pythia8 that will do the work
-   std::unique_ptr<Pythia8::Pythia> m_pythia;
+   Pythia8::Pythia* m_pythia;
 };
 
 #endif

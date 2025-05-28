@@ -5,16 +5,17 @@
 #ifndef RHadronPythiaDecayer_H
 #define RHadronPythiaDecayer_H
 
-#include "Generators/Pythia8ForDecays.h"
+#include "SimG4Core/Generators/interface/Pythia8ForDecays.h"
 
 #include "G4VExtDecayer.hh"
 #include "G4Track.hh"
 #include <string>
-#include "CxxUtils/checker_macros.h"
+//#include "CxxUtils/checker_macros.h"
 
 class G4DecayProducts;
 
-class ATLAS_NOT_THREAD_SAFE RHadronPythiaDecayer: public G4VExtDecayer
+//class ATLAS_NOT_THREAD_SAFE RHadronPythiaDecayer: public G4VExtDecayer
+class RHadronPythiaDecayer: public G4VExtDecayer
 {
   public:
    RHadronPythiaDecayer( const std::string& s );
