@@ -197,7 +197,7 @@ private:
   // Muon hits
   edm::ESGetToken<CSCGeometry, MuonGeometryRecord> cscGeometryToken_;
   edm::ESGetToken<DTGeometry, MuonGeometryRecord> dtGeometryToken_;
-  edm::ESGetToken<GEMGeometry, GEMGeometryRecord> gemGeometryToken_;
+  edm::ESGetToken<GEMGeometry, MuonGeometryRecord> gemGeometryToken_;
   edm::ESGetToken<RPCGeometry, MuonGeometryRecord> rpcGeometryToken_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonCSC_Token_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonDT_Token_;
@@ -239,7 +239,7 @@ SpikedRHadronAnalyzer::SpikedRHadronAnalyzer(const edm::ParameterSet& iConfig) {
   // Muon Chamber
   cscGeometryToken_ = esConsumes<CSCGeometry, MuonGeometryRecord>();
   dtGeometryToken_ = esConsumes<DTGeometry, MuonGeometryRecord>();
-  gemGeometryToken_ = esConsumes<GEMGeometry, GEMGeometryRecord>();
+  gemGeometryToken_ = esConsumes<GEMGeometry, MuonGeometryRecord>();
   rpcGeometryToken_ = esConsumes<RPCGeometry, MuonGeometryRecord>();
   edmPSimHitContainer_muonCSC_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonCSCHits"));
   edmPSimHitContainer_muonDT_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonDTHits"));
