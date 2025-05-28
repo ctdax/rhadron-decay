@@ -8,6 +8,8 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load("Geometry.GEMGeometryBuilder.gemGeometryDB_cfi")
+process.load("Geometry.MuonNumbering.muonNumberingInitialization_cfi")
 from Configuration.AlCa.GlobalTag import GlobalTag
 #process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 #from Configuration.AlCa.GlobalTag import GlobalTag

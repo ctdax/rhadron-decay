@@ -26,6 +26,12 @@ process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+options.register('mass', 1800,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.int,
+    "Mass of the gluino"
+)
+
 options.parseArguments()
 outputFile = options.outputFile
 stringToReplace = "_numEvent{}".format(options.maxEvents)

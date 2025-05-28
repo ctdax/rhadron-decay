@@ -18,6 +18,7 @@
 <use   name="FWCore/ServiceRegistry"/>
 <use   name="Geometry/CSCGeometry"/>
 <use   name="Geometry/CaloTopology"/>
+<use   name="Geometry/GEMGeometry"/>
 <use   name="Geometry/DTGeometry"/>
 <use   name="Geometry/EcalMapping"/>
 <use   name="Geometry/RPCGeometry"/>

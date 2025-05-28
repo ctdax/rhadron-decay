@@ -158,6 +158,7 @@ private:
   edm::EDGetTokenT<edm::PSimHitContainer> edmSimHitContainerToken_;
 
   // Tracker hits
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> tkGeometryToken_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTIBLow_Token_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTIBHigh_Token_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTOBLow_Token_;
@@ -172,6 +173,7 @@ private:
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_pxlFwdHigh_Token_;
 
   // ECAL hits
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeometryToken_;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEB_Token_;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEE_Token_;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsES_Token_;
@@ -193,6 +195,10 @@ private:
   */
 
   // Muon hits
+  edm::ESGetToken<CSCGeometry, MuonGeometryRecord> cscGeometryToken_;
+  edm::ESGetToken<DTGeometry, MuonGeometryRecord> dtGeometryToken_;
+  edm::ESGetToken<GEMGeometry, GEMGeometryRecord> gemGeometryToken_;
+  edm::ESGetToken<RPCGeometry, MuonGeometryRecord> rpcGeometryToken_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonCSC_Token_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonDT_Token_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonRPC_Token_;
@@ -209,6 +215,7 @@ SpikedRHadronAnalyzer::SpikedRHadronAnalyzer(const edm::ParameterSet& iConfig) {
   edmSimVertexContainerToken_ = consumes<edm::SimVertexContainer>(iConfig.getParameter<edm::InputTag>("G4VtxSrc"));
 
   // Tracker hits   
+  tkGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
   edmPSimHitContainer_siTIBLow_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTIBLowTof"));
   edmPSimHitContainer_siTIBHigh_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTIBHighTof"));
   edmPSimHitContainer_siTOBLow_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTOBLowTof"));
@@ -223,12 +230,17 @@ SpikedRHadronAnalyzer::SpikedRHadronAnalyzer(const edm::ParameterSet& iConfig) {
   edmPSimHitContainer_pxlFwdHigh_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsPixelEndcapHighTof"));
 
   // Calorimiter
+  caloGeometryToken_ = esConsumes<CaloGeometry, CaloGeometryRecord>();
   edmCaloHitContainer_EcalHitsEB_Token_ = consumes<edm::PCaloHitContainer>(iConfig.getParameter<edm::InputTag>("EcalHitsEB"));
   edmCaloHitContainer_EcalHitsEE_Token_ = consumes<edm::PCaloHitContainer>(iConfig.getParameter<edm::InputTag>("EcalHitsEE"));
   edmCaloHitContainer_EcalHitsES_Token_ = consumes<edm::PCaloHitContainer>(iConfig.getParameter<edm::InputTag>("EcalHitsES"));
   edmCaloHitContainer_HcalHits_Token_ = consumes<edm::PCaloHitContainer>(iConfig.getParameter<edm::InputTag>("HcalHits"));
 
   // Muon Chamber
+  cscGeometryToken_ = esConsumes<CSCGeometry, MuonGeometryRecord>();
+  dtGeometryToken_ = esConsumes<DTGeometry, MuonGeometryRecord>();
+  gemGeometryToken_ = esConsumes<GEMGeometry, GEMGeometryRecord>();
+  rpcGeometryToken_ = esConsumes<RPCGeometry, MuonGeometryRecord>();
   edmPSimHitContainer_muonCSC_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonCSCHits"));
   edmPSimHitContainer_muonDT_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonDTHits"));
   edmPSimHitContainer_muonRPC_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonRPCHits"));
@@ -411,7 +423,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
     edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find SimVertex in event!";
     return;
   }
-/*
+
   // Combine tracker simhit containers
   edm::PSimHitContainer G4SimHitContainer;
   G4SimHitContainer.insert(G4SimHitContainer.end(), SiTIBLowContainer->begin(), SiTIBLowContainer->end());
@@ -441,20 +453,12 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
   G4MuonContainer.insert(G4MuonContainer.end(), MuonGEMContainer->begin(), MuonGEMContainer->end());
 
   // Grab geometries
-  edm::ESHandle<CaloGeometry> caloGeometry;
-  //edm::ESHandle<HcalGeometry> hcalGeometry;
-  edm::ESHandle<TrackerGeometry> tkGeometry;
-  edm::ESHandle<CSCGeometry> cscGeometry;
-  edm::ESHandle<DTGeometry> dtGeometry;
-  edm::ESHandle<RPCGeometry> rpcGeometry;
-  edm::ESHandle<GEMGeometry> gemGeometry;
-  iSetup.get<TrackerDigiGeometryRecord>().get(tkGeometry);
-  iSetup.get<CaloGeometryRecord>().get(caloGeometry);
-  //iSetup.get<HcalGeometryRecord>().get(hcalGeometry);
-  iSetup.get<MuonGeometryRecord>().get(cscGeometry);
-  iSetup.get<MuonGeometryRecord>().get(dtGeometry);
-  iSetup.get<MuonGeometryRecord>().get(rpcGeometry);
-  iSetup.get<MuonGeometryRecord>().get(gemGeometry);
+  const CaloGeometry* caloGeometry = &iSetup.getData(caloGeometryToken_);
+  const TrackerGeometry* tkGeometry = &iSetup.getData(tkGeometryToken_);
+  const CSCGeometry* cscGeometry = &iSetup.getData(cscGeometryToken_);
+  const DTGeometry* dtGeometry = &iSetup.getData(dtGeometryToken_);
+  const GEMGeometry* gemGeometry = &iSetup.getData(gemGeometryToken_);
+  const RPCGeometry* rpcGeometry = &iSetup.getData(rpcGeometryToken_);
 
   // Begin loop over tracker sim hits
   for (auto simHit = G4SimHitContainer.begin(); simHit != G4SimHitContainer.end(); ++simHit) {
@@ -626,7 +630,6 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
-    */
 }
 //define this as a plug-in
 DEFINE_FWK_MODULE(SpikedRHadronAnalyzer);
