@@ -9,4 +9,3 @@
 <use name="geant4core"/>
 <use name="rootmath"/>
 <use name="expat"/>
-<use name="pythia8"/>

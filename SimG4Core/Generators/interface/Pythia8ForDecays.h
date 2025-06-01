@@ -1,29 +1,19 @@
 /*
-  Copyright (C) 2002-2025 CERN for the benefit of the ATLAS collaboration
-*/
-
-// Abused from Geant4 version of Pythai6.hh from extended examples
-
 #ifndef Pythia8ForDecays_H
 #define Pythia8ForDecays_H
 
-// For std::vector
 #include <vector>
-// G4 track function parameter
 #include "G4Track.hh"
-// For std::pair
 #include <utility>
-// For all the various Pythia8 classes used here
-//#include "Pythia8/Pythia.h"
-//using namespace Pythia8;
-// For unique_ptr
 #include <memory>
-//#include "CxxUtils/checker_macros.h"
+
+//////////////////////////
+// Author: C. Thompson  //
+// Date: May 29th, 2025 //
+//////////////////////////
 
 class G4DynamicParticle;
 class G4ParticleDefinition;
-
-//class ATLAS_NOT_THREAD_SAFE 
 
 namespace Pythia8 {
   class Pythia;
@@ -35,7 +25,7 @@ class Pythia8ForDecays
 {
   public:
    Pythia8ForDecays();
-   virtual ~Pythia8ForDecays();
+   virtual ~Pythia8ForDecays() = default;
 
    /// Function that decays the RHadron; returns products in G4 format
    void Py1ent(const G4Track&, std::vector<G4DynamicParticle*> &);
@@ -53,7 +43,8 @@ class Pythia8ForDecays
    bool isGluinoRHadron(int pdgId) const;
 
    /// The instance of Pythia8 that will do the work
-   Pythia8::Pythia* m_pythia;
+   std::unique_ptr<Pythia8::Pythia> m_pythia;
 };
 
 #endif
+*/

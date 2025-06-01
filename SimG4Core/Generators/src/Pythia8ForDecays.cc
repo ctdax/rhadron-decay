@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2002-2022 CERN for the benefit of the ATLAS collaboration
 */
-
+/*
 // Abused from Pythia6.cc in Geant4 extended examples
 
 // My own class definition
@@ -312,3 +312,4 @@ void Pythia8ForDecays::Py1ent(const G4Track& aTrack, std::vector<G4DynamicPartic
   }
 
 }
+  */
