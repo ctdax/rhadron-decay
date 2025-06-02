@@ -18,9 +18,9 @@ namespace gen {
   typedef std::shared_ptr<P8RndmEngine> P8RndmEnginePtr;
 }
 
-namespace CLHEP {
-  class HepRandomEngine;
-}
+//namespace CLHEP {
+//  class HepRandomEngine;
+//}
 
 namespace Pythia8 {
   class Pythia;

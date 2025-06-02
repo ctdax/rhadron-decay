@@ -1,6 +1,6 @@
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayer.h"
 
-#include "Randomize.hh"
+#include "CLHEP/Random/RandomEngine.h"
 #include "CLHEP/Vector/LorentzVector.h"
 #include "G4Track.hh"
 #include "G4DynamicParticle.hh"
@@ -31,13 +31,14 @@
 static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
 
 RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s )
- : G4VExtDecayer(s), pythia_(new Pythia8::Pythia()), pythiaRandomEngine_(new gen::P8RndmEngine())
+ : G4VExtDecayer(s)
 {
   // Pythia instance where RHadrons can decay
   //std::string docstring = Pythia8_i::xmlpath();
   //pythia_ = std::make_unique<Pythia8::Pythia>(docstring);
   //pythia_ = new Pythia8::Pythia();
-  //pythia_ = std::make_unique<Pythia8::Pythia>();
+  pythia_ = std::make_unique<Pythia8::Pythia>();
+  pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
   pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
   pythia_->readString("SLHA:file = SLHA_INPUT.DAT");
   pythia_->readString("ProcessLevel:all = off");
@@ -222,7 +223,8 @@ bool RHadronPythiaDecayer::isGluinoRHadron(int pdgId) const{
 void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
 {
   // Randomize pythia engine
-  edm::RandomEngineSentry<gen::P8RndmEngine> sentry(pythiaRandomEngine_.get(), G4Random::getTheEngine());
+  std::unique_ptr<CLHEP::HepRandomEngine> engine_;
+  edm::RandomEngineSentry<gen::P8RndmEngine> sentry(pythiaRandomEngine_.get(), engine_.get());
 
   // Get members from Pythia8 instance where RHadrons can decay
   Pythia8::Event& event      = pythia_->event;
