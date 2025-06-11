@@ -248,7 +248,7 @@ SpikedRHadronAnalyzer::SpikedRHadronAnalyzer(const edm::ParameterSet& iConfig) {
 
   // Create csv for energy spike R-hadron analysis
   csv.open (outputFileName);
-  csv << "Event,Energy Deposit,isHCAL,x [cm],y [cm],z [cm],r [cm],PDG,Track Energy,px,py,pz\n";
+  csv << "Event,Energy Deposit,isHCAL,x [cm],y [cm],z [cm],r [cm],PDG,TrackID,Track Energy,px,py,pz\n";
 
   evtcount = 0;
 }
@@ -489,7 +489,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
         auto momentum = simTrack->momentum();
 
         // Log the information
-        csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+        csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
       }
     } catch (const cms::Exception& e) {
       edm::LogError("TrackerHitAnalyzer::analyze") << "Invalid DetID: " << e.what();
@@ -516,7 +516,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       auto momentum = simTrack->momentum();
 
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
 
@@ -547,7 +547,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       auto momentum = simTrack->momentum();
 
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
 
@@ -571,7 +571,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       auto momentum = simTrack->momentum();
 
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 1 << "," << 0 << "," << 0 << "," << 0 << "," << 0 << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 1 << "," << 0 << "," << 0 << "," << 0 << "," << 0 << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
   
@@ -627,7 +627,7 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       auto momentum = simTrack->momentum();
 
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
     }
   }
 }

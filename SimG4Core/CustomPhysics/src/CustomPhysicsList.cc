@@ -36,6 +36,7 @@ CustomPhysicsList::CustomPhysicsList(const std::string& name, const edm::Paramet
     // this is left for backward compatibility
     dfactor = p.getParameter<double>("dark_factor");
     fHadronicInteraction = p.getParameter<bool>("rhadronPhysics");
+    G4cout << "Hadron lifetime is " << p.getParameter<double>("hadronLifeTime") << " ns." << G4endl;
   }
   edm::FileInPath fp = p.getParameter<edm::FileInPath>("particlesDef");
   particleDefFilePath = fp.fullPath();
@@ -100,7 +101,24 @@ void CustomPhysicsList::ConstructProcess() {
           pmanager->AddDiscreteProcess(new FullModelHadronicProcess(myHelper.get()));
         }
 
+        // Remove native G4 decay processes
+        G4ProcessVector *fullProcessList = pmanager->GetProcessList();
+        std::vector< G4VProcess * > existingDecayProcesses; existingDecayProcesses.reserve(2);
+        for (unsigned int i=0; i<fullProcessList->size(); ++i) {
+          G4VProcess* process = (*fullProcessList)[i];
+          if (process->GetProcessType() == fDecay) {
+            edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Found a pre-existing decay process for " <<particle->GetParticleName() << ". Will remove in favour of using RHadronPythiaDecayer.";
+            existingDecayProcesses.push_back(process);
+          }
+        }
+        for (G4VProcess* process : existingDecayProcesses) {
+          pmanager->RemoveProcess(process);
+        }
+
         // Add R-hadron decay
+        edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Particle name = " << particle->GetParticleName()
+                                                  << " Lifetime = " << particle->GetPDGLifeTime() / CLHEP::ns << " ns"
+                                                  << " Mass = " << particle->GetPDGMass() / GeV << " GeV";
         if (pythiaDecayProcess->IsApplicable(*particle)) {
           edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Adding decay for " << particle->GetParticleName();
           pmanager->AddProcess(pythiaDecayProcess);
@@ -119,6 +137,7 @@ void CustomPhysicsList::ConstructProcess() {
           CMSDarkPairProductionProcess* darkGamma = new CMSDarkPairProductionProcess(dfactor);
           pmanager->AddDiscreteProcess(darkGamma);
         }
+        pmanager->DumpInfo();
       }
     }
   }

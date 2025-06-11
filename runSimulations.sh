@@ -9,11 +9,11 @@
 # CONTROL CENTER ----------------------
 
 mass=1800
-events=1
+events=10
 cmEnergy="13TeV"
-prefix="test_v1.00"
+prefix="test_NoDecayTable"
 gensim=true
-eventdisplay=false # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
+eventdisplay=true # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
 
 # -------------------------------------
 
@@ -36,7 +36,7 @@ if $gensim; then
 
     if [ ! -f data/$dir_name/$genSimRoot ]; then
         echo "Starting step 0: GEN-SIM"
-        cmsRun simulate_rhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot
+        cmsRun simulate_rhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
         echo "Step 0 completed"
     fi
 

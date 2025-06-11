@@ -14,6 +14,7 @@
 #include "Pythia8/RHadrons.h"
 #include "GeneratorInterface/Pythia8Interface/interface/P8RndmEngine.h"
 #include "FWCore/ServiceRegistry/interface/RandomEngineSentry.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenParticle.h"
@@ -33,36 +34,37 @@ static inline unsigned short int nth_digit(const int& val,const unsigned short& 
 RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s )
  : G4VExtDecayer(s)
 {
-  // Pythia instance where RHadrons can decay
-  //std::string docstring = Pythia8_i::xmlpath();
-  //pythia_ = std::make_unique<Pythia8::Pythia>(docstring);
-  //pythia_ = new Pythia8::Pythia();
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
   pythia_ = std::make_unique<Pythia8::Pythia>();
   pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
-  pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
-  pythia_->readString("SLHA:file = SLHA_INPUT.DAT");
-  pythia_->readString("ProcessLevel:all = off");
-  pythia_->readString("Init:showChangedSettings = off");
-  pythia_->readString("RHadrons:allow = on");
-  pythia_->readString("RHadrons:allowDecay = on");
-  pythia_->readString("RHadrons:probGluinoball = 0.1");
-  pythia_->readString("PartonLevel:FSR = off");
-  pythia_->readString("Init:showAllParticleData = on");
+  //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
+  //pythia_->readString("SLHA:file = SLHA_INPUT.DAT");
+  //pythia_->readString("ProcessLevel:all = off");
+  //pythia_->readString("Init:showChangedSettings = off");
+  //pythia_->readString("RHadrons:allow = on");
+  //pythia_->readString("RHadrons:allowDecay = on");
+  //pythia_->readString("RHadrons:probGluinoball = 0.1");
+  //pythia_->readString("PartonLevel:FSR = off");
+  //pythia_->readString("Init:showAllParticleData = on");
 
   // Process the file of commands left for us by the python layer
-  std::string line;
-  std::ifstream command_stream ("PYTHIA8_COMMANDS.TXT");
-  while(getline(command_stream,line)){
-    // Leaving it to the top-level to get this file right
-    pythia_->readString(line);
-  }
-  command_stream.close();
+  //std::string line;
+  //std::ifstream command_stream ("PYTHIA8_COMMANDS.TXT");
+  //while(getline(command_stream,line)){
+  //  // Leaving it to the top-level to get this file right
+  //  pythia_->readString(line);
+  //}
+  //command_stream.close();
 
   pythia_->init();
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 instance initialized.";
 }
 
 
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
+  std::ofstream debugFile("/eos/user/c/cthompso/rhadron-decay/CMSSW_14_0_20/src/RHadronPythiaDecayer_debug.log", std::ios_base::app);
+  debugFile << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << std::endl;
+  debugFile << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() << ". Proper time is " << aTrack.GetProperTime() << std::endl;
   G4DecayProducts * dp = new G4DecayProducts();
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
 
@@ -76,7 +78,8 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
   // Pythia8 decay the particle and import the decay products
   decay(aTrack, particles);
 
-  G4cout << "Decayed an RHadron with ID " << pdgEncoding << " and momentum " << aTrack.GetMomentum() << " in Pythia.  Decay products are:" << G4endl;
+
+  debugFile << "RHadronPythiaDecayer: Decayed an RHadron with ID " << pdgEncoding << " and momentum " << aTrack.GetMomentum() << " in Pythia.  Decay products are:" << std::endl;
   double totalE=0.0;
   for (unsigned int i=0; i<particles.size(); ++i){
     if (particles[i]) {
@@ -84,12 +87,11 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
       totalE += particles[i]->GetTotalEnergy();
     }
     else {
-      G4cout << i << " null pointer!" << G4endl;
+      debugFile << "RHadronPythiaDecayer: Decay product " << i << " was a null pointer!" << std::endl;
     }
   }
 
-  G4cout << "Total energy in was "<<etot   << G4endl;
-  G4cout << "Total energy out is "<<totalE << G4endl;
+  debugFile << "RHadronPythiaDecayer: Total energy in was " << etot << ". Total energy out was " << totalE << std::endl;
 
   dp->DumpInfo();
 
@@ -269,9 +271,9 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
   int counter=0;
   while (fracR>=1.){
     if (counter==10){
-      G4cout << "Needed more than 10 attempts with constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << G4endl;
+      //debugFile << "RHadronPythiaDecayer: Needed more than 10 attempts with constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << std::endl;
     } else if (counter>100){
-      G4cout << "RHadronPythiaDecayer::decay ERROR   Failed >100 times. Constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << G4endl;
+      //debugFile << "RHadronPythiaDecayer::decay ERROR   Failed >100 times. Constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << std::endl;
       return;
     }
     mRBef = pdt.mSel(idRBef);
@@ -332,7 +334,7 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
     const G4ParticleDefinition * particleDefinition = GetParticleDefinition( pythia_->event[i].id() );
 
     if (!particleDefinition){
-      G4cout << "I don't know a definition for pdgid "<<pythia_->event[i].id()<<"! Skipping it..." << G4endl;
+      //debugFile << "RHadronPythiaDecayer: I don't know a definition for pdgid "<<pythia_->event[i].id()<<"! Skipping it..." << std::endl;
       continue;
     }
 
