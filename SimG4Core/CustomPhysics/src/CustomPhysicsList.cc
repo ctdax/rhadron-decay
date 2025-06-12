@@ -16,6 +16,7 @@
 #include "G4hIonisation.hh"
 #include "G4ProcessManager.hh"
 #include "G4Decay.hh"
+#include "G4DecayTable.hh"
 
 #include "SimG4Core/CustomPhysics/interface/FullModelHadronicProcess.h"
 #include "SimG4Core/CustomPhysics/interface/CMSDarkPairProductionProcess.h"
@@ -61,7 +62,8 @@ void CustomPhysicsList::ConstructProcess() {
 
   G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
   G4Decay* pythiaDecayProcess = new G4Decay();
-  pythiaDecayProcess->SetExtDecayer(new RHadronPythiaDecayer("RHadronPythiaDecayer"));
+  const std::string& RhadronPythiaDecayerCommandFile = myConfig.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath();
+  pythiaDecayProcess->SetExtDecayer(new RHadronPythiaDecayer("RHadronPythiaDecayer", RhadronPythiaDecayerCommandFile));
 
   for (auto particle : fParticleFactory.get()->getCustomParticles()) {
     if (particle->GetParticleType() == "simp") {
@@ -123,6 +125,7 @@ void CustomPhysicsList::ConstructProcess() {
           edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Adding decay for " << particle->GetParticleName();
           pmanager->AddProcess(pythiaDecayProcess);
           pmanager->SetProcessOrdering(pythiaDecayProcess, idxPostStep);
+          pythiaDecayProcess->SetVerboseLevel(2);
         } else {
           edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: No decay allowed for " << particle->GetParticleName();
           if (!particle->GetPDGStable() && particle->GetPDGLifeTime() < 0.1 * CLHEP::ns) {

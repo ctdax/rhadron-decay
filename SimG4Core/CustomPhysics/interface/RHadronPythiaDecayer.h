@@ -34,7 +34,7 @@ class G4DecayProducts;
 class RHadronPythiaDecayer: public G4VExtDecayer
 {
   public:
-   RHadronPythiaDecayer( const std::string& s ); //Constructor
+   RHadronPythiaDecayer( const std::string& s, const std::string& commandFile ); //Constructor
    virtual ~RHadronPythiaDecayer() = default; //Destructor
 
    virtual G4DecayProducts* ImportDecayProducts(const G4Track&); //Import the decay products
@@ -53,6 +53,7 @@ class RHadronPythiaDecayer: public G4VExtDecayer
 
    std::unique_ptr<Pythia8::Pythia> pythia_; // Instance of pythia
    gen::P8RndmEnginePtr pythiaRandomEngine_; // Instance of pythia Random engine
+   std::string commandFile_; // Text file with commands for Pythia8
 };
 
 #endif

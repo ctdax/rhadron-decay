@@ -94,20 +94,18 @@ process.dirhadrongenfilter = cms.EDFilter("MCParticlePairFilter",
     MinP = cms.untracked.vdouble(0.0, 0.0),
     MinPt = cms.untracked.vdouble(0.0, 0.0),
     ParticleCharge = cms.untracked.int32(0),
-    #ParticleID1 = cms.untracked.vint32( 
-    #    1000993, 1009213, 1009313, 1009323, 1009113, 
-    #    1009223, 1009333, 1091114, 1092114, 1092214, 
-    #    1092224, 1093114, 1093214, 1093224, 1093314, 
-    #    1093324, 1093334
-    #),
-    #ParticleID2 = cms.untracked.vint32(
-    #    1000993, 1009213, 1009313, 1009323, 1009113, 
-    #    1009223, 1009333, 1091114, 1092114, 1092214, 
-    #    1092224, 1093114, 1093214, 1093224, 1093314, 
-    #    1093324, 1093334
-    #),
-    ParticleID1 = cms.untracked.vint32(1009213),
-    ParticleID2 = cms.untracked.vint32(1009213),
+    ParticleID1 = cms.untracked.vint32( 
+        1000993, 1009213, 1009313, 1009323, 1009113, 
+        1009223, 1009333, 1091114, 1092114, 1092214, 
+        1092224, 1093114, 1093214, 1093224, 1093314, 
+        1093324, 1093334
+    ),
+    ParticleID2 = cms.untracked.vint32(
+        1000993, 1009213, 1009313, 1009323, 1009113, 
+        1009223, 1009333, 1091114, 1092114, 1092214, 
+        1092224, 1093114, 1093214, 1093224, 1093314, 
+        1093324, 1093334
+    ),
     Status = cms.untracked.vint32(1, 1)
 )
 
@@ -124,7 +122,7 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
             'SUSY:gg2gluinogluino = on', 
             'SUSY:qqbar2gluinogluino = on', 
             'RHadrons:allow = on', 
-            'RHadrons:allowDecay = on', 
+            'RHadrons:allowDecay = off', 
             'RHadrons:setMasses = on', 
             'RHadrons:probGluinoball = 0.1'
         ),
@@ -169,10 +167,9 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
     hscpFlavor = cms.untracked.string('gluino'),
     massPoint = cms.untracked.int32(options.mass),
     maxEventsToPrint = cms.untracked.int32(0),
-    #particleFile = cms.untracked.string('Configuration/Generator/data/particles_gluino_1800_GeV.txt'),
     particleFile = cms.untracked.string('SimG4Core/CustomPhysics/data/TESTDECAY_GLUINO1800.txt'),
+    RhadronPythiaDecayerCommandFile = cms.untracked.string('SimG4Core/CustomPhysics/data/RhadronPythiaDecayerCommands.txt'),
     pdtFile = cms.FileInPath('Configuration/Generator/data/hscppythiapdtgluino1800.tbl'),
-    #pdtFile = cms.FileInPath('SimG4Core/CustomPhysics/data/hscpPythiaPDTgluino1800Modified.tbl'),
     processFile = cms.untracked.string('SimG4Core/CustomPhysics/data/RhadronProcessList.txt'),
     pythiaHepMCVerbosity = cms.untracked.bool(False),
     pythiaPylistVerbosity = cms.untracked.int32(0),

@@ -31,30 +31,24 @@
 
 static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
 
-RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s )
- : G4VExtDecayer(s)
+RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& commandFile )
+ : G4VExtDecayer(s), commandFile_(commandFile)
 {
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
   pythia_ = std::make_unique<Pythia8::Pythia>();
   pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
   //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
-  //pythia_->readString("SLHA:file = SLHA_INPUT.DAT");
-  //pythia_->readString("ProcessLevel:all = off");
-  //pythia_->readString("Init:showChangedSettings = off");
-  //pythia_->readString("RHadrons:allow = on");
-  //pythia_->readString("RHadrons:allowDecay = on");
-  //pythia_->readString("RHadrons:probGluinoball = 0.1");
-  //pythia_->readString("PartonLevel:FSR = off");
-  //pythia_->readString("Init:showAllParticleData = on");
 
-  // Process the file of commands left for us by the python layer
-  //std::string line;
-  //std::ifstream command_stream ("PYTHIA8_COMMANDS.TXT");
-  //while(getline(command_stream,line)){
-  //  // Leaving it to the top-level to get this file right
-  //  pythia_->readString(line);
-  //}
-  //command_stream.close();
+  std::string line;
+  std::ifstream command_stream(commandFile_);
+  if (!command_stream.is_open()) {
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "Could not open command file: " << commandFile_;
+  }
+  while(getline(command_stream, line)){
+    pythia_->readString(line);
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 command: " << line;
+  }
+  command_stream.close();
 
   pythia_->init();
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 instance initialized.";
@@ -63,8 +57,8 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s )
 
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
   std::ofstream debugFile("/eos/user/c/cthompso/rhadron-decay/CMSSW_14_0_20/src/RHadronPythiaDecayer_debug.log", std::ios_base::app);
-  debugFile << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << std::endl;
-  debugFile << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() << ". Proper time is " << aTrack.GetProperTime() << std::endl;
+  debugFile << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName() << std::endl;
+  debugFile << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime() << std::endl;
   G4DecayProducts * dp = new G4DecayProducts();
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
 
@@ -85,6 +79,8 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
     if (particles[i]) {
       dp->PushProducts(particles[i]);
       totalE += particles[i]->GetTotalEnergy();
+      G4ParticleDefinition* pd = GetParticleDefinition(particles[i]->GetPDGcode());
+      debugFile << pd->GetParticleName() << std::endl;
     }
     else {
       debugFile << "RHadronPythiaDecayer: Decay product " << i << " was a null pointer!" << std::endl;

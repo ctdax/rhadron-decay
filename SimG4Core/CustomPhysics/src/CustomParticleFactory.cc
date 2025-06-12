@@ -73,19 +73,22 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
         continue;
       }
       G4DecayTable *aDecayTable = nullptr;
-      if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
-        aDecayTable = getDecayTable(&configFile, pdgId);
-        aParticle->SetDecayTable(aDecayTable);
-      }
-      aParticle->SetPDGStable(false);
-      aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
-      G4ParticleDefinition *aAntiParticle = theParticleTable->FindAntiParticle(pdgId);
-      if (nullptr != aAntiParticle && aAntiParticle->GetPDGEncoding() != pdgId) {
+      if (pdgId != 1000021) // Ignore gluinos, those will be handled in RHadronPythiaDecayer
+      {
         if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
-          aAntiParticle->SetDecayTable(getAntiDecayTable(pdgId, aDecayTable));
+          aDecayTable = getDecayTable(&configFile, pdgId);
+          aParticle->SetDecayTable(aDecayTable);
         }
-        aAntiParticle->SetPDGStable(false);
-        aAntiParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
+        aParticle->SetPDGStable(false);
+        aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
+        G4ParticleDefinition *aAntiParticle = theParticleTable->FindAntiParticle(pdgId);
+        if (nullptr != aAntiParticle && aAntiParticle->GetPDGEncoding() != pdgId) {
+          if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
+            aAntiParticle->SetDecayTable(getAntiDecayTable(pdgId, aDecayTable));
+          }
+          aAntiParticle->SetPDGStable(false);
+          aAntiParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
+        }
       }
     }
   }
