@@ -248,7 +248,7 @@ SpikedRHadronAnalyzer::SpikedRHadronAnalyzer(const edm::ParameterSet& iConfig) {
 
   // Create csv for energy spike R-hadron analysis
   csv.open (outputFileName);
-  csv << "Event,Energy Deposit,isHCAL,x [cm],y [cm],z [cm],r [cm],PDG,TrackID,Track Energy,px,py,pz\n";
+  csv << "Event,Energy Deposit,isHCAL,x [cm],y [cm],z [cm],r [cm],PDG,TrackID,Track Energy,px,py,pz,primaryVertexX,primaryVertexY,primaryVertexZ\n";
 
   evtcount = 0;
 }
@@ -488,8 +488,18 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
         // Get the momentum of the particle that caused the hit
         auto momentum = simTrack->momentum();
 
+        // Get the primary vertex position
+        auto vertexId = simTrack->vertIndex();
+        GlobalPoint primaryVertex(0, 0, 0);
+        if (vertexId >= 0 && vertexId < static_cast<int>(G4VtxContainer->size())) {
+          const SimVertex& vertex = G4VtxContainer->at(vertexId);
+          primaryVertex = GlobalPoint(vertex.position().x(), vertex.position().y(), vertex.position().z());
+        } else {
+          edm::LogWarning("TrackerHitAnalyzer::analyze") << "Invalid vertex index: " << vertexId;
+        }
+
         // Log the information
-        csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+        csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << ',' << primaryVertex.x() << ',' << primaryVertex.y() << ',' << primaryVertex.z() << '\n';
       }
     } catch (const cms::Exception& e) {
       edm::LogError("TrackerHitAnalyzer::analyze") << "Invalid DetID: " << e.what();
@@ -515,8 +525,18 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       // Get the momentum of the particle that caused the hit
       auto momentum = simTrack->momentum();
 
+      // Get the primary vertex position
+        auto vertexId = simTrack->vertIndex();
+        GlobalPoint primaryVertex(0, 0, 0);
+        if (vertexId >= 0 && vertexId < static_cast<int>(G4VtxContainer->size())) {
+          const SimVertex& vertex = G4VtxContainer->at(vertexId);
+          primaryVertex = GlobalPoint(vertex.position().x(), vertex.position().y(), vertex.position().z());
+        } else {
+          edm::LogWarning("TrackerHitAnalyzer::analyze") << "Invalid vertex index: " << vertexId;
+        }
+
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << ',' << primaryVertex.x() << ',' << primaryVertex.y() << ',' << primaryVertex.z() << '\n';
     }
   }
 
@@ -546,8 +566,18 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       // Get the momentum of the particle that caused the hit
       auto momentum = simTrack->momentum();
 
+      // Get the primary vertex position
+        auto vertexId = simTrack->vertIndex();
+        GlobalPoint primaryVertex(0, 0, 0);
+        if (vertexId >= 0 && vertexId < static_cast<int>(G4VtxContainer->size())) {
+          const SimVertex& vertex = G4VtxContainer->at(vertexId);
+          primaryVertex = GlobalPoint(vertex.position().x(), vertex.position().y(), vertex.position().z());
+        } else {
+          edm::LogWarning("TrackerHitAnalyzer::analyze") << "Invalid vertex index: " << vertexId;
+        }
+
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << ',' << primaryVertex.x() << ',' << primaryVertex.y() << ',' << primaryVertex.z() << '\n';
     }
   }
 
@@ -570,8 +600,18 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       // Get the momentum of the particle that caused the hit
       auto momentum = simTrack->momentum();
 
+      // Get the primary vertex position
+        auto vertexId = simTrack->vertIndex();
+        GlobalPoint primaryVertex(0, 0, 0);
+        if (vertexId >= 0 && vertexId < static_cast<int>(G4VtxContainer->size())) {
+          const SimVertex& vertex = G4VtxContainer->at(vertexId);
+          primaryVertex = GlobalPoint(vertex.position().x(), vertex.position().y(), vertex.position().z());
+        } else {
+          edm::LogWarning("TrackerHitAnalyzer::analyze") << "Invalid vertex index: " << vertexId;
+        }
+
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 1 << "," << 0 << "," << 0 << "," << 0 << "," << 0 << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 1 << "," << 0 << "," << 0 << "," << 0 << "," << 0 << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << ',' << primaryVertex.x() << ',' << primaryVertex.y() << ',' << primaryVertex.z() << '\n';
     }
   }
   
@@ -626,8 +666,18 @@ void SpikedRHadronAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSe
       // Get the momentum of the particle that caused the hit
       auto momentum = simTrack->momentum();
 
+      // Get the primary vertex position
+        auto vertexId = simTrack->vertIndex();
+        GlobalPoint primaryVertex(0, 0, 0);
+        if (vertexId >= 0 && vertexId < static_cast<int>(G4VtxContainer->size())) {
+          const SimVertex& vertex = G4VtxContainer->at(vertexId);
+          primaryVertex = GlobalPoint(vertex.position().x(), vertex.position().y(), vertex.position().z());
+        } else {
+          edm::LogWarning("TrackerHitAnalyzer::analyze") << "Invalid vertex index: " << vertexId;
+        }
+
       // Log the information
-      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << '\n';
+      csv << evtcount << "," << energyDeposit << "," << 0 << "," << x << "," << y << "," << z << "," << r << "," << particleType << ',' << trackId << "," << momentum.E() << ',' << momentum.Px() << ',' << momentum.Py() << ',' << momentum.Pz() << ',' << primaryVertex.x() << ',' << primaryVertex.y() << ',' << primaryVertex.z() << '\n';
     }
   }
 }

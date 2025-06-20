@@ -37,7 +37,6 @@ CustomPhysicsList::CustomPhysicsList(const std::string& name, const edm::Paramet
     // this is left for backward compatibility
     dfactor = p.getParameter<double>("dark_factor");
     fHadronicInteraction = p.getParameter<bool>("rhadronPhysics");
-    G4cout << "Hadron lifetime is " << p.getParameter<double>("hadronLifeTime") << " ns." << G4endl;
   }
   edm::FileInPath fp = p.getParameter<edm::FileInPath>("particlesDef");
   particleDefFilePath = fp.fullPath();
@@ -61,9 +60,13 @@ void CustomPhysicsList::ConstructProcess() {
                                              << "for the list of particles";
 
   G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+
+  // Set the external pythia decayer for Rhadrons. RhadronPythiaDecayerCommandFile is an optional file that can be passed in the python config file to modify pythia settings for the Rhadron decays
   G4Decay* pythiaDecayProcess = new G4Decay();
-  const std::string& RhadronPythiaDecayerCommandFile = myConfig.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath();
-  pythiaDecayProcess->SetExtDecayer(new RHadronPythiaDecayer("RHadronPythiaDecayer", RhadronPythiaDecayerCommandFile));
+  const std::string RhadronPythiaDecayerCommandFile = myConfig.existsAs<edm::FileInPath>("RhadronPythiaDecayerCommandFile", false)
+                                                              ? myConfig.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath()
+                                                              : "";
+  pythiaDecayProcess->SetExtDecayer(new RHadronPythiaDecayer("RHadronPythiaDecayer", particleDefFilePath, RhadronPythiaDecayerCommandFile));
 
   for (auto particle : fParticleFactory.get()->getCustomParticles()) {
     if (particle->GetParticleType() == "simp") {

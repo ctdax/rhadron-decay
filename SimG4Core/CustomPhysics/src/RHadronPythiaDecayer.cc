@@ -29,26 +29,35 @@
 // Date: May 29th, 2025 //
 //////////////////////////
 
-static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
-
-RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& commandFile )
- : G4VExtDecayer(s), commandFile_(commandFile)
+RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitions, const std::string& commandFile )
+ : G4VExtDecayer(s), SLHAParticleDefinitions_(SLHAParticleDefinitions), commandFile_(commandFile)
 {
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
   pythia_ = std::make_unique<Pythia8::Pythia>();
   pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
   //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
+  pythia_->readString("SLHA:file = " + SLHAParticleDefinitions_);
 
-  std::string line;
-  std::ifstream command_stream(commandFile_);
-  if (!command_stream.is_open()) {
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "Could not open command file: " << commandFile_;
+  if (commandFile_.empty()) {
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
+    pythia_->readString("RHadrons:all = on");
+    pythia_->readString("RHadrons:allowDecay = on");
+    pythia_->readString("RHadrons:probGluinoball = 0.1");
+    pythia_->readString("Next:showMothersAndDaughters = on");
+  } 
+  else {
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using command file: " << commandFile_;
+    std::string line;
+    std::ifstream command_stream(commandFile_);
+    if (!command_stream.is_open()) {
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Could not open command file: " << commandFile_;
+    }
+    while(getline(command_stream, line)){
+      pythia_->readString(line);
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 command: " << line;
+    }
+    command_stream.close();
   }
-  while(getline(command_stream, line)){
-    pythia_->readString(line);
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 command: " << line;
-  }
-  command_stream.close();
 
   pythia_->init();
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 instance initialized.";
@@ -56,38 +65,29 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
 
 
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
-  std::ofstream debugFile("/eos/user/c/cthompso/rhadron-decay/CMSSW_14_0_20/src/RHadronPythiaDecayer_debug.log", std::ios_base::app);
-  debugFile << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName() << std::endl;
-  debugFile << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime() << std::endl;
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName();
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime();
   G4DecayProducts * dp = new G4DecayProducts();
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
 
   // get properties for later print outs
   G4double etot = aTrack.GetDynamicParticle()->GetTotalEnergy();
-  G4int pdgEncoding = aTrack.GetDefinition()->GetPDGEncoding();
 
   // Outgoing particle
   std::vector<G4DynamicParticle*> particles;
 
-  // Pythia8 decay the particle and import the decay products
+  // Use Pythia8 to decay the particle and import the decay products
   decay(aTrack, particles);
 
-
-  debugFile << "RHadronPythiaDecayer: Decayed an RHadron with ID " << pdgEncoding << " and momentum " << aTrack.GetMomentum() << " in Pythia.  Decay products are:" << std::endl;
   double totalE=0.0;
   for (unsigned int i=0; i<particles.size(); ++i){
     if (particles[i]) {
       dp->PushProducts(particles[i]);
       totalE += particles[i]->GetTotalEnergy();
-      G4ParticleDefinition* pd = GetParticleDefinition(particles[i]->GetPDGcode());
-      debugFile << pd->GetParticleName() << std::endl;
-    }
-    else {
-      debugFile << "RHadronPythiaDecayer: Decay product " << i << " was a null pointer!" << std::endl;
     }
   }
 
-  debugFile << "RHadronPythiaDecayer: Total energy in was " << etot << ". Total energy out was " << totalE << std::endl;
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << etot << ". Total energy out was " << totalE;
 
   dp->DumpInfo();
 
@@ -95,96 +95,6 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
 }
 
 
-G4ParticleDefinition* RHadronPythiaDecayer::GetParticleDefinition(const int pdgEncoding) const
-{
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition* particleDefinition(nullptr);
-  if (pdgEncoding != 0) particleDefinition = particleTable->FindParticle(pdgEncoding);
-  return particleDefinition;
-}
-
-
-std::pair<int,int> RHadronPythiaDecayer::fromIdWithSquark( int idRHad) const
-{
-
-  // Find squark flavour content.
-  int idRSb            = pythia_->settings.mode("RHadrons:idSbottom");
-  int idRSt            = pythia_->settings.mode("RHadrons:idStop");
-  int idLight = (abs(idRHad) - 1000000) / 10;
-  int idSq    = (idLight < 100) ? idLight/10 : idLight/100;
-  int id1     = (idSq == 6) ? idRSt : idRSb;
-  if (idRHad < 0) id1 = -id1;
-
-  // Find light (di)quark flavour content.
-  int id2     =  (idLight < 100) ? idLight%10 : idLight%100;
-  if (id2 > 10) id2 = 100 * id2 + abs(idRHad)%10;
-  if ((id2 < 10 && idRHad > 0) || (id2 > 10 && idRHad < 0)) id2 = -id2;
-
-  // Done.
-  return std::make_pair( id1, id2);
-
-}
-
-// TODO: Would be nice for this to be a public function in Pythia8::RHadrons.hh
-std::pair<int,int> RHadronPythiaDecayer::fromIdWithGluino( int idRHad, Pythia8::Rndm* rndmPtr) const
-{
-  // Find light flavour content of R-hadron.
-  int idLight = (abs(idRHad) - 1000000) / 10;
-  int id1, id2, idTmp, idA, idB, idC;
-  double diquarkSpin1RH = 0.5;
-
-  // Gluinoballs: split g into d dbar or u ubar.
-  if (idLight < 100) {
-    id1 = (rndmPtr->flat() < 0.5) ? 1 : 2;
-    id2 = -id1;
-
-  // Gluino-meson: split into q + qbar.
-  } else if (idLight < 1000) {
-    id1 = (idLight / 10) % 10;
-    id2 = -(idLight % 10);
-    // Flip signs when first quark of down-type.
-    if (id1%2 == 1) {
-      idTmp = id1;
-      id1   = -id2;
-      id2   = -idTmp;
-    }
-
-  // Gluino-baryon: split to q + qq (diquark).
-  // Pick diquark at random, except if c or b involved.
-  } else {
-    idA = (idLight / 100) % 10;
-    idB = (idLight / 10) % 10;
-    idC = idLight % 10;
-    double rndmQ = 3. * rndmPtr->flat();
-    if (idA > 3) rndmQ = 0.5;
-    if (rndmQ < 1.) {
-      id1 = idA;
-      id2 = 1000 * idB + 100 * idC + 3;
-      if (idB != idC && rndmPtr->flat() > diquarkSpin1RH) id2 -= 2;
-    } else if (rndmQ < 2.) {
-      id1 = idB;
-      id2 = 1000 * idA + 100 * idC + 3;
-      if (idA != idC && rndmPtr->flat() > diquarkSpin1RH) id2 -= 2;
-    } else {
-      id1 = idC;
-      id2 = 1000 * idA + 100 * idB +3;
-      if (idA != idB && rndmPtr->flat() > diquarkSpin1RH) id2 -= 2;
-    }
-  }
-  // Flip signs for anti-R-hadron.
-  if (idRHad < 0) {
-    idTmp = id1;
-    id1   = -id2;
-    id2   = -idTmp;
-  }
-
-  // Done.
-  return std::make_pair( id1, id2);
-
-}
-
-/// Add a G4Track to a Pythia8 event to make it a single-particle gun. The particle must be a colour singlet.
-/// Input: particle, Pythia8 event
 void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& event) const
 {
   // Reset event record to allow for new event.
@@ -196,146 +106,40 @@ void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& e
   // Store the particle in the event record.
   event.append( aTrack.GetDefinition()->GetPDGEncoding(), 1, 0, 0, aTrack.GetMomentum().x()/CLHEP::GeV, aTrack.GetMomentum().y()/CLHEP::GeV,
                 aTrack.GetMomentum().z()/CLHEP::GeV, aTrack.GetDynamicParticle()->GetTotalEnergy()/CLHEP::GeV, mm/CLHEP::GeV);
-  // Note: this function returns an int, but we don't need or use its output
 }
 
-bool RHadronPythiaDecayer::isGluinoRHadron(int pdgId) const{
-  // Checking what kind of RHadron this is based on the digits in its PDGID
-  const unsigned short digitValue_q1 = nth_digit(pdgId,4);
-  const unsigned short digitValue_l = nth_digit(pdgId,5);
-
-  // Gluino R-Hadrons have the form 109xxxx or 1009xxx
-  if (digitValue_l == 9 || (digitValue_l==0 && digitValue_q1 == 9) ){
-    // This is a gluino R-Hadron
-    return true;
-  }
-
-  // Special case : R-gluinoball
-  if (pdgId==1000993) return true;
-
-  // This is not a gluino R-Hadron (probably a squark R-Hadron)
-  return false;
-
-}
 
 void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
 {
-  // Randomize pythia engine
+  // Randomize the pythia engine
   std::unique_ptr<CLHEP::HepRandomEngine> engine_;
   edm::RandomEngineSentry<gen::P8RndmEngine> sentry(pythiaRandomEngine_.get(), engine_.get());
+  Pythia8::Event& event = pythia_->event;
 
-  // Get members from Pythia8 instance where RHadrons can decay
-  Pythia8::Event& event      = pythia_->event;
-  Pythia8::ParticleData& pdt = pythia_->particleData;
-
-  // Use pythiaDecay information to fill event with the input particle
-  fillParticle(aTrack, event);
-
-  // Copy and paste of RHadron decay code
-  int    iRNow  = 1;
-  int    idRHad = event[iRNow].id();
-  double mRHad  = event[iRNow].m();
-  int    iR0    = 0;
-  int    iR2    = 0;
-
-  bool isTriplet = !isGluinoRHadron(idRHad);
-
-  // Find flavour content of squark or gluino R-hadron.
-  std::pair<int,int> idPair = (isTriplet) ? fromIdWithSquark( idRHad) : fromIdWithGluino( idRHad, &(pythia_->rndm));
-  int id1 = idPair.first;
-  int id2 = idPair.second;
-
-  // Sharing of momentum: the squark/gluino should be restored
-  // to original mass, but error if negative-mass spectators.
-  int idRSb            = pythia_->settings.mode("RHadrons:idSbottom");
-  int idRSt            = pythia_->settings.mode("RHadrons:idStop");
-  int idRGo            = pythia_->settings.mode("RHadrons:idGluino");
-  int idLight = (abs(idRHad) - 1000000) / 10;
-  int idSq    = (idLight < 100) ? idLight/10 : idLight/100;
-  int idRSq     = (idSq == 6) ? idRSt : idRSb;
-
-  // Handling R-Hadrons with anti-squarks
-  idRSq = idRSq * std::copysign(1, idRHad);
-
-  int idRBef = isTriplet ? idRSq : idRGo;
-
-  // Mass of the underlying sparticle
-  double mRBef = pdt.mSel(idRBef);
-
-  // Fraction of the RHadron mass given by the sparticle
-  double fracR = mRBef / mRHad;
-  int counter=0;
-  while (fracR>=1.){
-    if (counter==10){
-      //debugFile << "RHadronPythiaDecayer: Needed more than 10 attempts with constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << std::endl;
-    } else if (counter>100){
-      //debugFile << "RHadronPythiaDecayer::decay ERROR   Failed >100 times. Constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << std::endl;
-      return;
-    }
-    mRBef = pdt.mSel(idRBef);
-    fracR = mRBef / mRHad;
-    counter++;
-  }
-
-  // Squark case
-  if(isTriplet){
-    const int col = (pdt.colType(idRBef) != 0) ? event.nextColTag() : 0; // NB There should be no way that this can be zero (see discussion on ATLASSIM-6687), but leaving check in there just in case something changes in the future.
-    int tmpSparticleColor = id1>0 ? col : 0;
-    int tmpSparticleAnticolor = id1>0 ? 0 : col;
-
-    // Store the constituents of a squark R-hadron.
-
-    // Sparticle
-    // (id, status, mother1, mother2, daughter1, daughter2, col, acol, px, py, pz, e, m=0., scaleIn=0., polIn=9.)
-    iR0 = event.append( id1, 106, iRNow, 0, 0, 0, tmpSparticleColor, tmpSparticleAnticolor, fracR * event[iRNow].p(), fracR * mRHad, 0.);
-    // Spectator quark
-    iR2 = event.append( id2, 106, iRNow, 0, 0, 0, tmpSparticleAnticolor, tmpSparticleColor, (1. - fracR) * event[iRNow].p(), (1. - fracR) * mRHad, 0.);
-  }
-  // Gluino case
-  else{
-    double mOffsetCloudRH = 0.2; // could be read from internal data?
-    double m1Eff  = pdt.constituentMass(id1) + mOffsetCloudRH;
-    double m2Eff  = pdt.constituentMass(id2) + mOffsetCloudRH;
-    double frac1 = (1. - fracR) * m1Eff / ( m1Eff + m2Eff);
-    double frac2 = (1. - fracR) * m2Eff / ( m1Eff + m2Eff);
-
-    // Two new colours needed in the breakups.
-    int col1 = event.nextColTag();
-    int col2 = event.nextColTag();
-
-    // Store the constituents of a gluino R-hadron.
-    iR0 = event.append( idRBef, 106, iRNow, 0, 0, 0, col2, col1, fracR * event[iRNow].p(), fracR * mRHad, 0.);
-    event.append( id1, 106, iRNow, 0, 0, 0, col1, 0, frac1 * event[iRNow].p(), frac1 * mRHad, 0.);
-    iR2 = event.append( id2, 106, iRNow, 0, 0, 0, 0, col2, frac2 * event[iRNow].p(), frac2 * mRHad, 0.);
-  }
-
-  // Mark R-hadron as decayed and update history.
-  event[iRNow].statusNeg();
-  event[iRNow].daughters( iR0, iR2);
-
-  // Generate events. Quit if failure.
-  if (!pythia_->next()) {
+  fillParticle(aTrack, event); // Fill the pythia event with the Rhadron
+  if (!pythia_->next()){ // Let pythia decay the Rhadron
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia failed to generate the event, forcing Rhadron decay.";
     pythia_->forceRHadronDecays();
   }
 
-  ///////////////////////////////////////////////////////////////////////////
   // Add the particles from the Pythia event into the GEANT particle vector
-  ///////////////////////////////////////////////////////////////////////////
-  particles.clear();
-
   for(int i=0; i<pythia_->event.size(); i++){
     if ( pythia_->event[i].status()<0 ) continue; // stable only
     G4ThreeVector momentum( pythia_->event[i].px() , pythia_->event[i].py() , pythia_->event[i].pz() );
-    momentum*=1000.0;//GeV to MeV
-    const G4ParticleDefinition * particleDefinition = GetParticleDefinition( pythia_->event[i].id() );
+    momentum *= 1000.0; // Convert GeV to MeV
 
+    G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
+    const G4ParticleDefinition* particleDefinition = particleTable->FindParticle(pythia_->event[i].id()); // Get the particle definition from the Pythia event
     if (!particleDefinition){
-      //debugFile << "RHadronPythiaDecayer: I don't know a definition for pdgid "<<pythia_->event[i].id()<<"! Skipping it..." << std::endl;
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: I don't know a definition for pdgid "<<pythia_->event[i].id()<<"! Skipping it...";
       continue;
     }
 
-    G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum);
+    G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum); // Create the dynamic particle and add it to Geant
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Adding " << particleDefinition->GetParticleName() << " with ID " << pythia_->event[i].id() << " and momentum " << momentum << " MeV to Geant.";
     particles.push_back( dynamicParticle );
+
+    delete dynamicParticle;
   }
 
 }
