@@ -228,15 +228,7 @@ BLOCK MSOFT Q=  4.67034192E+02  # The soft SUSY breaking masses at the scale Q
     46     4.23245877E+02   # mtR(Q)              
     47     5.23148807E+02   # mdR(Q)              
     48     5.23148807E+02   # msR(Q)              
-    49     5.19867261E+02   # mbR(Q)              
-#
-#
-#
-#                             =================
-#                             |The decay table|
-#                             =================
-#
-# - The multi-body decays for the inos, stops and sbottoms are included.
+    49     5.19867261E+02   # mbR(Q)            
 #
 #         PDG            Width
 DECAY        25     1.98610799E-03   # h decays

@@ -29,14 +29,19 @@
 // Date: May 29th, 2025 //
 //////////////////////////
 
-RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitions, const std::string& commandFile )
- : G4VExtDecayer(s), SLHAParticleDefinitions_(SLHAParticleDefinitions), commandFile_(commandFile)
+RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
+ : G4VExtDecayer(s), SLHAParticleDefinitionsFile_(SLHAParticleDefinitionsFile), commandFile_(commandFile)
 {
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
   pythia_ = std::make_unique<Pythia8::Pythia>();
   pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
   //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
-  pythia_->readString("SLHA:file = " + SLHAParticleDefinitions_);
+  if (SLHAParticleDefinitionsFile_.empty()) {
+    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No SLHA particle definitions file provided. Using default Pythia8 settings.";
+  }
+  else {
+    pythia_->readString("SLHA:file = " + SLHAParticleDefinitionsFile_);
+  }
 
   if (commandFile_.empty()) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
@@ -50,7 +55,7 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
     std::string line;
     std::ifstream command_stream(commandFile_);
     if (!command_stream.is_open()) {
-      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Could not open command file: " << commandFile_;
+      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Could not open command file: " << commandFile_;
     }
     while(getline(command_stream, line)){
       pythia_->readString(line);

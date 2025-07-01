@@ -50,8 +50,10 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
   // This should be compatible IMO to SLHA
   G4ParticleTable *theParticleTable = G4ParticleTable::GetParticleTable();
   while (getline(configFile, line)) {
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Processing line: " << line;
     line.erase(0, line.find_first_not_of(" \t"));  // Remove leading whitespace.
     if (line.length() == 0 || line.at(0) == '#') {
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Skipping line: " << line;
       continue;
     }  // Skip blank lines and comments.
     // The mass table begins with a line containing "BLOCK MASS"
@@ -60,6 +62,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       getMassTable(&configFile);
     }
     if (line.find("DECAY") < line.npos) {
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Found a decay entry in the file.";
       int pdgId;
       double width;
       std::string tmpString;
@@ -69,29 +72,28 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       edm::LogVerbatim("SimG4CoreCustomPhysics")
           << "CustomParticleFactory: entry to G4DecayTable: pdgID, width " << pdgId << ",  " << width;
       G4ParticleDefinition *aParticle = theParticleTable->FindParticle(pdgId);
-      if (nullptr == aParticle || width == 0.0) {
+      if (nullptr == aParticle || width == 0.0 || pdgId == 1000021) { // Skip if particle is stable, not found, or a gluino
         continue;
       }
       G4DecayTable *aDecayTable = nullptr;
-      if (pdgId != 1000021) // Ignore gluinos, those will be handled in RHadronPythiaDecayer
-      {
-        if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
-          aDecayTable = getDecayTable(&configFile, pdgId);
-          aParticle->SetDecayTable(aDecayTable);
-        }
-        aParticle->SetPDGStable(false);
-        aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
+      if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
+        aDecayTable = getDecayTable(&configFile, pdgId);
+        aParticle->SetDecayTable(aDecayTable);
+      }
+      aParticle->SetPDGStable(false);
+      aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
+
+      if (pdgId < 999999 || pdgId > 2000015) { // Do not handle anti decay tables for SUSY particles
         G4ParticleDefinition *aAntiParticle = theParticleTable->FindAntiParticle(pdgId);
         if (nullptr != aAntiParticle && aAntiParticle->GetPDGEncoding() != pdgId) {
-          if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
-            aAntiParticle->SetDecayTable(getAntiDecayTable(pdgId, aDecayTable));
-          }
+          aAntiParticle->SetDecayTable(getAntiDecayTable(pdgId, aDecayTable));
           aAntiParticle->SetPDGStable(false);
           aAntiParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
         }
       }
     }
   }
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Ran into issue at: " << line;
 #ifdef G4MULTITHREADED
   G4MUTEXUNLOCK(&customParticleFactoryMutex);
 #endif
@@ -263,12 +265,12 @@ void CustomParticleFactory::getMassTable(std::ifstream *configFile) {
   // This should be compatible IMO to SLHA
   while (getline(*configFile, line)) {
     line.erase(0, line.find_first_not_of(" \t"));  // remove leading whitespace
-    if (line.length() == 0 || line.at(0) == '#')
-      continue;  // skip blank lines and comments
-    if (ToLower(line).find("block") < line.npos) {
+    if ((ToLower(line).find("block") < line.npos) || (line == "#")) {
       edm::LogInfo("SimG4CoreCustomPhysics") << "CustomParticleFactory: Finished the Mass Table ";
       break;
     }
+    if (line.length() == 0 || line.at(0) == '#')
+      continue;  // skip blank lines and comments
     std::stringstream sstr(line);
     sstr >> pdgId >> mass >> tmp >> name;  // Assume SLHA format, e.g.: 1000001 5.68441109E+02 # ~d_L
 
