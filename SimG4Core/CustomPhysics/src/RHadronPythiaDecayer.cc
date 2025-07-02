@@ -45,10 +45,12 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
 
   if (commandFile_.empty()) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
+    pythia_->readString("SUSY:all = on");
+    pythia_->readString("SUSY:gg2gluinogluino = on");
+    pythia_->readString("SUSY:qqbar2gluinogluino = on"); 
     pythia_->readString("RHadrons:all = on");
     pythia_->readString("RHadrons:allowDecay = on");
     pythia_->readString("RHadrons:probGluinoball = 0.1");
-    pythia_->readString("Next:showMothersAndDaughters = on");
   } 
   else {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using command file: " << commandFile_;
