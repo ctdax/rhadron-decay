@@ -45,12 +45,12 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
 
   if (commandFile_.empty()) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
+    pythia_->readString("ProcessLevel:all = off");
     pythia_->readString("SUSY:all = on");
-    pythia_->readString("SUSY:gg2gluinogluino = on");
-    pythia_->readString("SUSY:qqbar2gluinogluino = on"); 
     pythia_->readString("RHadrons:all = on");
     pythia_->readString("RHadrons:allowDecay = on");
     pythia_->readString("RHadrons:probGluinoball = 0.1");
+    pythia_->readString("PartonLevel:FSR = off");
   } 
   else {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using command file: " << commandFile_;
@@ -94,7 +94,7 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
     }
   }
 
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << etot << ". Total energy out was " << totalE;
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << etot / CLHEP::GeV << " GeV, total energy out is " << totalE / CLHEP::GeV << " GeV.";
 
   dp->DumpInfo();
 
@@ -107,12 +107,13 @@ void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& e
   // Reset event record to allow for new event.
   event.reset();
 
-  // Select particle mass; where relevant according to Breit-Wigner.
-  double mm = aTrack.GetDynamicParticle()->GetMass();
+  // Get particle mass and 4-momentum.
+  double mass = aTrack.GetDynamicParticle()->GetMass() / CLHEP::GeV;
+  const G4LorentzVector g4p4 = aTrack.GetDynamicParticle()->Get4Momentum() / CLHEP::GeV;
+  Pythia8::Vec4 p4(g4p4.px(), g4p4.py(), g4p4.pz(), g4p4.e());
 
   // Store the particle in the event record.
-  event.append( aTrack.GetDefinition()->GetPDGEncoding(), 1, 0, 0, aTrack.GetMomentum().x()/CLHEP::GeV, aTrack.GetMomentum().y()/CLHEP::GeV,
-                aTrack.GetMomentum().z()/CLHEP::GeV, aTrack.GetDynamicParticle()->GetTotalEnergy()/CLHEP::GeV, mm/CLHEP::GeV);
+  event.append( aTrack.GetDefinition()->GetPDGEncoding(), 1, 0, 0, p4, mass);
 }
 
 
@@ -129,24 +130,22 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
     pythia_->forceRHadronDecays();
   }
 
-  // Add the particles from the Pythia event into the GEANT particle vector
+  // Add the particles from the Pythia event into the Geant particle vector
+  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   for(int i=0; i<pythia_->event.size(); i++){
     if ( pythia_->event[i].status()<0 ) continue; // stable only
     G4ThreeVector momentum( pythia_->event[i].px() , pythia_->event[i].py() , pythia_->event[i].pz() );
     momentum *= 1000.0; // Convert GeV to MeV
 
-    G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
     const G4ParticleDefinition* particleDefinition = particleTable->FindParticle(pythia_->event[i].id()); // Get the particle definition from the Pythia event
     if (!particleDefinition){
-      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: I don't know a definition for pdgid "<<pythia_->event[i].id()<<"! Skipping it...";
+      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: I don't know a definition for pdgid " << pythia_->event[i].id() << "! Skipping it...";
       continue;
     }
 
     G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum); // Create the dynamic particle and add it to Geant
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Adding " << particleDefinition->GetParticleName() << " with ID " << pythia_->event[i].id() << " and momentum " << momentum << " MeV to Geant.";
     particles.push_back( dynamicParticle );
-
-    delete dynamicParticle;
   }
 
 }
