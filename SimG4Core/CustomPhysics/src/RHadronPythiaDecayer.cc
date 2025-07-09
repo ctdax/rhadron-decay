@@ -40,6 +40,7 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
     edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No SLHA particle definitions file provided. Using default Pythia8 settings.";
   }
   else {
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using SLHA particle definitions file: " << SLHAParticleDefinitionsFile_;
     pythia_->readString("SLHA:file = " + SLHAParticleDefinitionsFile_);
   }
 

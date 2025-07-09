@@ -1,7 +1,5 @@
 ProcessLevel:all = off
 SUSY:all = on
-SUSY:gg2gluinogluino = off
-SUSY:qqbar2gluinogluino = off
 RHadrons:allow = on
 RHadrons:allowDecay = on
 RHadrons:probGluinoball = 0.1
@@ -10,7 +8,7 @@ Next:showMothersAndDaughters = on
 Main:timesAllowErrors = 10000
 Init:showChangedSettings = on
 Init:showProcesses = on
-Init:showChangedParticleData = on
+Init:showAllParticleData = on
 Init:showAllSettings = on
 Next:numberCount = 100
 Next:numberShowEvent = 0
