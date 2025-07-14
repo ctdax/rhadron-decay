@@ -32,10 +32,13 @@
 RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
  : G4VExtDecayer(s), SLHAParticleDefinitionsFile_(SLHAParticleDefinitionsFile), commandFile_(commandFile)
 {
+  // Initialize the Pythia8 instance for R-hadron decays
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
   pythia_ = std::make_unique<Pythia8::Pythia>();
   pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
   //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
+
+  // Read in the SLHA particle definitions file if provided
   if (SLHAParticleDefinitionsFile_.empty()) {
     edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No SLHA particle definitions file provided. Using default Pythia8 settings.";
   }
@@ -44,6 +47,7 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
     pythia_->readString("SLHA:file = " + SLHAParticleDefinitionsFile_);
   }
 
+  // Read in the command file for Pythia8 settings. If none is given use the following default settings.
   if (commandFile_.empty()) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
     pythia_->readString("ProcessLevel:all = off");
@@ -95,6 +99,9 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
     }
   }
 
+  if (etot / CLHEP::GeV != totalE / CLHEP::GeV) {
+    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Energy not conserved in decay. Initial energy = " << etot / CLHEP::GeV << " GeV. Final energy = " << totalE / CLHEP::GeV << " GeV.";
+  }
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << etot / CLHEP::GeV << " GeV, total energy out is " << totalE / CLHEP::GeV << " GeV.";
 
   dp->DumpInfo();
@@ -127,20 +134,21 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
 
   fillParticle(aTrack, event); // Fill the pythia event with the Rhadron
   if (!pythia_->next()){ // Let pythia decay the Rhadron
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia failed to generate the event, forcing Rhadron decay.";
+    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia failed to generate the event, forcing Rhadron decay.";
     pythia_->forceRHadronDecays();
   }
 
   // Add the particles from the Pythia event into the Geant particle vector
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   for(int i=0; i<pythia_->event.size(); i++){
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Decay product " << i << " with ID " << pythia_->event[i].id() << " and status " << pythia_->event[i].status() << " has production vertex " << pythia_->event[i].vProd() << " and decay vertex " << pythia_->event[i].vDec();
     if ( pythia_->event[i].status()<0 ) continue; // stable only
     G4ThreeVector momentum( pythia_->event[i].px() , pythia_->event[i].py() , pythia_->event[i].pz() );
     momentum *= 1000.0; // Convert GeV to MeV
 
     const G4ParticleDefinition* particleDefinition = particleTable->FindParticle(pythia_->event[i].id()); // Get the particle definition from the Pythia event
     if (!particleDefinition){
-      edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: I don't know a definition for pdgid " << pythia_->event[i].id() << "! Skipping it...";
+      edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: I don't know a definition for pdgid " << pythia_->event[i].id() << "! Skipping it...";
       continue;
     }
 
