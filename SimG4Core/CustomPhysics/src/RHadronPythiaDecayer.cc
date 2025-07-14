@@ -4,7 +4,10 @@
 #include "CLHEP/Vector/LorentzVector.h"
 #include "G4Track.hh"
 #include "G4DynamicParticle.hh"
+#include "G4Decay.hh"
+#include "G4Step.hh"
 #include "G4DecayProducts.hh"
+#include "G4VParticleChange.hh"
 #include "G4ParticleDefinition.hh"
 #include "G4ParticleTable.hh"
 #include "G4ThreeVector.hh"
@@ -30,7 +33,7 @@
 //////////////////////////
 
 RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
- : G4VExtDecayer(s), SLHAParticleDefinitionsFile_(SLHAParticleDefinitionsFile), commandFile_(commandFile)
+ : G4Decay(s), SLHAParticleDefinitionsFile_(SLHAParticleDefinitionsFile), commandFile_(commandFile)
 {
   // Initialize the Pythia8 instance for R-hadron decays
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
@@ -62,7 +65,7 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
     std::string line;
     std::ifstream command_stream(commandFile_);
     if (!command_stream.is_open()) {
-      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Could not open command file: " << commandFile_;
+      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer`: Could not open command file: " << commandFile_;
     }
     while(getline(command_stream, line)){
       pythia_->readString(line);
@@ -76,6 +79,25 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
 }
 
 
+G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
+  // First call the standard DecayIt to generate secondaries
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Inside of RHadronPythiaDecayer::DecayIt!";
+  G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Just ran G4Decay::DecayIt!";
+
+  // Update the position of the secondaries in geant to match the potentially displaced positions from pythia
+  for (G4int i = 0; i < fParticleChangeForDecay->GetNumberOfSecondaries(); ++i) {
+    G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
+    if (!secondary) continue;
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updating secondary particle " << i << " name is " << secondary->GetDefinition()->GetParticleName() << ". Initial position was " << secondary->GetPosition() << ". Displacement is " << secondaryDisplacements_[i];
+    secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[i]);
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updated position to " << secondary->GetPosition();
+  }
+
+  return fParticleChangeForDecay;
+}
+
+
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName();
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime();
@@ -83,26 +105,26 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
 
   // get properties for later print outs
-  G4double etot = aTrack.GetDynamicParticle()->GetTotalEnergy();
+  G4double E_initial = aTrack.GetDynamicParticle()->GetTotalEnergy();
 
   // Outgoing particle
   std::vector<G4DynamicParticle*> particles;
 
   // Use Pythia8 to decay the particle and import the decay products
-  decay(aTrack, particles);
+  pythiaDecay(aTrack, particles);
 
-  double totalE=0.0;
+  double E_final=0.0;
   for (unsigned int i=0; i<particles.size(); ++i){
     if (particles[i]) {
       dp->PushProducts(particles[i]);
-      totalE += particles[i]->GetTotalEnergy();
+      E_final += particles[i]->GetTotalEnergy();
     }
   }
 
-  if (etot / CLHEP::GeV != totalE / CLHEP::GeV) {
-    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Energy not conserved in decay. Initial energy = " << etot / CLHEP::GeV << " GeV. Final energy = " << totalE / CLHEP::GeV << " GeV.";
+  if ((E_initial / CLHEP::GeV >= 1.01 * E_final / CLHEP::GeV) || (E_initial / CLHEP::GeV <= 0.99 * E_final / CLHEP::GeV)) {
+    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Energy not conserved in decay. Initial energy = " << E_initial / CLHEP::GeV << " GeV. Final energy = " << E_final / CLHEP::GeV << " GeV.";
   }
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << etot / CLHEP::GeV << " GeV, total energy out is " << totalE / CLHEP::GeV << " GeV.";
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << E_initial / CLHEP::GeV << " GeV, total energy out is " << E_final / CLHEP::GeV << " GeV.";
 
   dp->DumpInfo();
 
@@ -125,7 +147,7 @@ void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& e
 }
 
 
-void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
+void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
 {
   // Randomize the pythia engine
   std::unique_ptr<CLHEP::HepRandomEngine> engine_;
@@ -143,7 +165,8 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
   for(int i=0; i<pythia_->event.size(); i++){
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Decay product " << i << " with ID " << pythia_->event[i].id() << " and status " << pythia_->event[i].status() << " has production vertex " << pythia_->event[i].vProd() << " and decay vertex " << pythia_->event[i].vDec();
     if ( pythia_->event[i].status()<0 ) continue; // stable only
-    G4ThreeVector momentum( pythia_->event[i].px() , pythia_->event[i].py() , pythia_->event[i].pz() );
+    G4ThreeVector displacement(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
+    G4ThreeVector momentum(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz());
     momentum *= 1000.0; // Convert GeV to MeV
 
     const G4ParticleDefinition* particleDefinition = particleTable->FindParticle(pythia_->event[i].id()); // Get the particle definition from the Pythia event
@@ -155,6 +178,6 @@ void RHadronPythiaDecayer::decay(const G4Track& aTrack, std::vector<G4DynamicPar
     G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum); // Create the dynamic particle and add it to Geant
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Adding " << particleDefinition->GetParticleName() << " with ID " << pythia_->event[i].id() << " and momentum " << momentum << " MeV to Geant.";
     particles.push_back( dynamicParticle );
+    secondaryDisplacements_.push_back(displacement); // Store the position of the secondary particle to update in RHadronPythiaDecayer::DecayIt
   }
-
 }

@@ -61,11 +61,12 @@ void CustomPhysicsList::ConstructProcess() {
 
   G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
 
-  // Set the external pythia decayer for Rhadrons. RhadronPythiaDecayerCommandFile is an optional file that can be passed in the python config file to modify pythia settings for the Rhadron decays
-  G4Decay* pythiaDecayProcess = new G4Decay();
+  // Set the pythia decayer for Rhadrons. RhadronPythiaDecayerCommandFile is an optional file that can be passed in the python config file to modify pythia settings for the Rhadron decays
+  G4Decay* decay = new G4Decay(); // Used to check if decay is applicable for particles
   const std::string RhadronPythiaDecayerCommandFile = myConfig.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath();
-
-  pythiaDecayProcess->SetExtDecayer(new RHadronPythiaDecayer("RHadronPythiaDecayer", particleDefFilePath, RhadronPythiaDecayerCommandFile));
+  G4Decay* pythiaDecayProcess = new RHadronPythiaDecayer("RHadronPythiaDecayer", particleDefFilePath, RhadronPythiaDecayerCommandFile);
+  G4VExtDecayer* extDecayer = dynamic_cast<G4VExtDecayer*>(pythiaDecayProcess);
+  pythiaDecayProcess->SetExtDecayer(extDecayer); // Set the external decayer to itself. Seems redundant but is necessary as far as I can tell. Without doing this, RHadronPythiaDecayer::ImportDecayProducts() will not be called.
 
   for (auto particle : fParticleFactory.get()->getCustomParticles()) {
     if (particle->GetParticleType() == "simp") {
@@ -123,7 +124,7 @@ void CustomPhysicsList::ConstructProcess() {
         edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Particle name = " << particle->GetParticleName()
                                                   << " Lifetime = " << particle->GetPDGLifeTime() / CLHEP::ns << " ns"
                                                   << " Mass = " << particle->GetPDGMass() / GeV << " GeV";
-        if (pythiaDecayProcess->IsApplicable(*particle)) {
+        if (decay->IsApplicable(*particle)) {
           edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Adding decay for " << particle->GetParticleName();
           pmanager->AddProcess(pythiaDecayProcess);
           pmanager->SetProcessOrdering(pythiaDecayProcess, idxPostStep);
