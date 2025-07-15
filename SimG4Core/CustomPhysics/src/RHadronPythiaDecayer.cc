@@ -85,12 +85,12 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Just ran G4Decay::DecayIt!";
 
-  // Update the position of the secondaries in geant to match the potentially displaced positions from pythia
-  for (G4int i = 0; i < fParticleChangeForDecay->GetNumberOfSecondaries(); ++i) {
+  // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
+  for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
-    if (!secondary) continue;
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updating secondary particle " << i << " name is " << secondary->GetDefinition()->GetParticleName() << ". Initial position was " << secondary->GetPosition() << ". Displacement is " << secondaryDisplacements_[i];
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[i]);
+    //secondary->SetVertexPosition(secondary->GetVertexPosition() + secondaryDisplacements_[i]);
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updated position to " << secondary->GetPosition();
   }
 
