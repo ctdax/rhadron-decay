@@ -33,7 +33,7 @@ class G4Track;
 class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
 {
   public:
-   RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile ); //Constructor
+   RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile ); //Constructor
    virtual ~RHadronPythiaDecayer() = default; //Destructor
 
    G4VParticleChange* DecayIt(const G4Track& aTrack, const G4Step& aStep) override; //What Geant calls to decay the Rhadron
@@ -46,9 +46,6 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
    void pythiaDecay(const G4Track&, std::vector<G4DynamicParticle*> &); //Function to decay the RHadron and return products in G4 format
 
    std::unique_ptr<Pythia8::Pythia> pythia_; // Instance of pythia
-   gen::P8RndmEnginePtr pythiaRandomEngine_; // Instance of pythia Random engine
-   std::string SLHAParticleDefinitionsFile_; // Text file with particle definitions for Pythia8
-   std::string commandFile_; // Text file with commands for Pythia8
    std::vector<G4ThreeVector> secondaryDisplacements_;
 };
 

@@ -32,26 +32,23 @@
 // Date: May 29th, 2025 //
 //////////////////////////
 
-RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
- : G4Decay(s), SLHAParticleDefinitionsFile_(SLHAParticleDefinitionsFile), commandFile_(commandFile)
+RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
+ : pythia_(new Pythia8::Pythia())
 {
   // Initialize the Pythia8 instance for R-hadron decays
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
-  pythia_ = std::make_unique<Pythia8::Pythia>();
-  pythiaRandomEngine_ = std::make_shared<gen::P8RndmEngine>();
-  //pythia_->setRndmEnginePtr(pythiaRandomEngine_.get());
 
   // Read in the SLHA particle definitions file if provided
-  if (SLHAParticleDefinitionsFile_.empty()) {
+  if (SLHAParticleDefinitionsFile.empty()) {
     edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No SLHA particle definitions file provided. Using default Pythia8 settings.";
   }
   else {
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using SLHA particle definitions file: " << SLHAParticleDefinitionsFile_;
-    pythia_->readString("SLHA:file = " + SLHAParticleDefinitionsFile_);
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using SLHA particle definitions file: " << SLHAParticleDefinitionsFile;
+    pythia_->readString("SLHA:file = " + SLHAParticleDefinitionsFile);
   }
 
   // Read in the command file for Pythia8 settings. If none is given use the following default settings.
-  if (commandFile_.empty()) {
+  if (commandFile.empty()) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
     pythia_->readString("ProcessLevel:all = off");
     pythia_->readString("SUSY:all = on");
@@ -61,11 +58,11 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& s, const std::str
     pythia_->readString("PartonLevel:FSR = off");
   } 
   else {
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using command file: " << commandFile_;
+    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Using command file: " << commandFile;
     std::string line;
-    std::ifstream command_stream(commandFile_);
+    std::ifstream command_stream(commandFile);
     if (!command_stream.is_open()) {
-      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer`: Could not open command file: " << commandFile_;
+      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer`: Could not open command file: " << commandFile;
     }
     while(getline(command_stream, line)){
       pythia_->readString(line);
@@ -90,7 +87,6 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updating secondary particle " << i << " name is " << secondary->GetDefinition()->GetParticleName() << ". Initial position was " << secondary->GetPosition() << ". Displacement is " << secondaryDisplacements_[i];
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[i]);
-    //secondary->SetVertexPosition(secondary->GetVertexPosition() + secondaryDisplacements_[i]);
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updated position to " << secondary->GetPosition();
   }
 
@@ -149,9 +145,6 @@ void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& e
 
 void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
 {
-  // Randomize the pythia engine
-  std::unique_ptr<CLHEP::HepRandomEngine> engine_;
-  edm::RandomEngineSentry<gen::P8RndmEngine> sentry(pythiaRandomEngine_.get(), engine_.get());
   Pythia8::Event& event = pythia_->event;
 
   fillParticle(aTrack, event); // Fill the pythia event with the Rhadron

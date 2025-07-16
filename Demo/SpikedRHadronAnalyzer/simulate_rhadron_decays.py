@@ -175,7 +175,7 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
     pythiaPylistVerbosity = cms.untracked.int32(0),
     #slhaFile = cms.untracked.string('Configuration/Generator/data/TESTDECAY_GLUINO1800.txt'),
     useregge = cms.bool(False),
-    initialSeed = cms.untracked.uint32(912345678),
+    initialSeed = cms.untracked.uint32(process.RandomNumberGeneratorService.generator.initialSeed.value()),
 #    engineName = cms.untracked.string('TRandom3')
 )
 
