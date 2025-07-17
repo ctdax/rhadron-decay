@@ -72,7 +72,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       edm::LogVerbatim("SimG4CoreCustomPhysics")
           << "CustomParticleFactory: entry to G4DecayTable: pdgID, width " << pdgId << ",  " << width;
       G4ParticleDefinition *aParticle = theParticleTable->FindParticle(pdgId);
-      if (nullptr == aParticle || width == 0.0 || pdgId == 1000021) { // Skip if particle is stable, not found, or a gluino
+      if (nullptr == aParticle || width == 0.0) { // Skip if particle is stable or not found
         continue;
       }
       G4DecayTable *aDecayTable = nullptr;

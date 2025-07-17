@@ -41,6 +41,14 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
    virtual G4DecayProducts* ImportDecayProducts(const G4Track&); //Tell pythia to decay the Rhadron and return the products in Geant format
 
   private:
+   void RHadronToConsituents(Pythia8::Event& event); // Strip the RHadron down to its constituents in preperation for decaying the gluino or squark
+
+   std::pair<int,int> fromIdWithSquark( int idRHad) const;
+
+   std::pair<int,int> fromIdWithGluino( int idRHad, Pythia8::Rndm* rndmPtr) const;
+
+   bool isGluinoRHadron(int pdgId) const;
+
    void fillParticle(const G4Track&, Pythia8::Event& event) const; //Fill a Pythia8 event with the information from a G4Track
 
    void pythiaDecay(const G4Track&, std::vector<G4DynamicParticle*> &); //Function to decay the RHadron and return products in G4 format
