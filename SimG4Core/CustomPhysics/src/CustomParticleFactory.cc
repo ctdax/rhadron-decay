@@ -49,6 +49,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       << filePath;
   // This should be compatible IMO to SLHA
   G4ParticleTable *theParticleTable = G4ParticleTable::GetParticleTable();
+  G4double gluinoLifetime = -1.0; // Default value for the lifetime of the gluino, will be set if a gluino decay is found in the file
   while (getline(configFile, line)) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Processing line: " << line;
     line.erase(0, line.find_first_not_of(" \t"));  // Remove leading whitespace.
@@ -75,11 +76,13 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       if (nullptr == aParticle || width == 0.0) { // Skip if particle is stable or not found
         continue;
       }
-      G4DecayTable *aDecayTable = nullptr;
-      if (pdgId < 1000900 || pdgId > 1999999) { // Do not set the decay table for Rhadrons, instead we will decay them externally using RHadronPythiaDecayer
-        aDecayTable = getDecayTable(&configFile, pdgId);
-        aParticle->SetDecayTable(aDecayTable);
+      if (pdgId == 1000021) { // Set the RhadronLifetime to the gluino lifetime. Skip the decay table of the gluino. The decay table will be passed to the RhadronPythiaDecayer
+        gluinoLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s;
+        continue;
       }
+
+      G4DecayTable *aDecayTable = getDecayTable(&configFile, pdgId);
+      aParticle->SetDecayTable(aDecayTable);
       aParticle->SetPDGStable(false);
       aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
 
@@ -93,6 +96,20 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       }
     }
   }
+
+  // If the gluinoLifetime is set, set it for all gluino Rhadrons
+  if (gluinoLifetime != -1.0) {
+    for (auto &particle : m_particles) {
+      if (CustomPDGParser::s_isgluinoHadron(particle->GetPDGEncoding())) {
+        particle->SetPDGStable(false);
+        particle->SetPDGLifeTime(gluinoLifetime);
+        edm::LogVerbatim("SimG4CoreCustomPhysics")
+            << "CustomParticleFactory: Setting lifetime for " << particle->GetParticleName() << " equal to lifetime of the gluino. This is "
+            << gluinoLifetime << "s.";
+      }
+    }
+  }
+
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Ran into issue at: " << line;
 #ifdef G4MULTITHREADED
   G4MUTEXUNLOCK(&customParticleFactoryMutex);

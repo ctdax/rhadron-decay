@@ -54,8 +54,8 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefin
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: No command file provided. Using default RHadronPythiaDecayer settings.";
     pythia_->readString("ProcessLevel:all = off");
     pythia_->readString("SUSY:all = on");
-    pythia_->readString("RHadrons:all = on");
-    pythia_->readString("RHadrons:allowDecay = on");
+    pythia_->readString("RHadrons:allow = off");
+    pythia_->readString("1000021:mWidth = 1.0"); 
     pythia_->readString("RHadrons:probGluinoball = 0.1");
     pythia_->readString("PartonLevel:FSR = off");
   } 
@@ -260,6 +260,12 @@ void RHadronPythiaDecayer::RHadronToConsituents(Pythia8::Event& event) {
   // Mark R-hadron as decayed and update history.
   event[iRNow].statusNeg();
   event[iRNow].daughters( iR0, iR2);
+
+  // Set secondary vertex for decay products, but no lifetime.
+    Pythia8::Vec4 vDec = event[iRNow].vProd() + event[iRNow].tau() * event[iR0].p() / event[iR0].m();
+    for (int iRd = iR0; iRd <= iR2; ++iRd) {
+      event[iRd].vProd( vDec);
+    }
 }
 
 

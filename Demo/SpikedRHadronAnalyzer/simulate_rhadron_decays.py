@@ -158,7 +158,8 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
             'SLHA:minMassSM = 1000.', 
             'ParticleDecays:limitTau0 = on', 
             'ParticleDecays:tau0Max = 10', 
-            'ParticleDecays:allowPhotonRadiation = on'
+            'ParticleDecays:allowPhotonRadiation = on',
+            '1000021:mayDecay = off'
         )
     ),
     SLHAFileForPythia8 = cms.string('SimG4Core/CustomPhysics/data/TESTDECAY_GLUINO1800.txt'),
