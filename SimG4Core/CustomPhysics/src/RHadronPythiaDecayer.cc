@@ -32,6 +32,7 @@
 // Date: May 29th, 2025 //
 //////////////////////////
 
+
 static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
 
 RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
@@ -55,7 +56,8 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefin
     pythia_->readString("ProcessLevel:all = off");
     pythia_->readString("SUSY:all = on");
     pythia_->readString("RHadrons:allow = off");
-    pythia_->readString("1000021:mWidth = 1.0"); 
+    pythia_->readString("1000021:mWidth = 1000.0"); // Force gluino to decay immediately
+    pythia_->readString("1000006:mWidth = 1000.0"); // Force stop to decay immediately
     pythia_->readString("RHadrons:probGluinoball = 0.1");
     pythia_->readString("PartonLevel:FSR = off");
   } 
@@ -98,7 +100,7 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
 
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName();
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime();
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Momentum is " << aTrack.GetMomentum() / CLHEP::GeV << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime();
   G4DecayProducts * dp = new G4DecayProducts();
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
 

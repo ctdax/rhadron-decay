@@ -50,6 +50,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
   // This should be compatible IMO to SLHA
   G4ParticleTable *theParticleTable = G4ParticleTable::GetParticleTable();
   G4double gluinoLifetime = -1.0; // Default value for the lifetime of the gluino, will be set if a gluino decay is found in the file
+  G4double stopLifetime = -1.0; // Default value for the lifetime of the stop, will be set if a stop decay is found in the file
   while (getline(configFile, line)) {
     edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Processing line: " << line;
     line.erase(0, line.find_first_not_of(" \t"));  // Remove leading whitespace.
@@ -76,8 +77,12 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       if (nullptr == aParticle || width == 0.0) { // Skip if particle is stable or not found
         continue;
       }
-      if (pdgId == 1000021) { // Set the RhadronLifetime to the gluino lifetime. Skip the decay table of the gluino. The decay table will be passed to the RhadronPythiaDecayer
+      if (pdgId == 1000021) { // Set the gluino RhadronLifetime to the gluino lifetime. Skip the decay table of the gluino. The decay table will be passed to the RhadronPythiaDecayer
         gluinoLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s;
+        continue;
+      }
+      if (pdgId == 1000006) { // Set the stop RhadronLifetime to the stop lifetime. Skip the decay table of the stop. The decay table will be passed to the RhadronPythiaDecayer
+        stopLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s;
         continue;
       }
 
@@ -106,6 +111,19 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
         edm::LogVerbatim("SimG4CoreCustomPhysics")
             << "CustomParticleFactory: Setting lifetime for " << particle->GetParticleName() << " equal to lifetime of the gluino. This is "
             << gluinoLifetime << "s.";
+      }
+    }
+  }
+
+  // If the stopLifetime is set, set it for all stop Rhadrons
+  if (stopLifetime != -1.0) {
+    for (auto &particle : m_particles) {
+      if (CustomPDGParser::s_isstopHadron(particle->GetPDGEncoding())) {
+        particle->SetPDGStable(false);
+        particle->SetPDGLifeTime(stopLifetime);
+        edm::LogVerbatim("SimG4CoreCustomPhysics")
+            << "CustomParticleFactory: Setting lifetime for " << particle->GetParticleName() << " equal to lifetime of the stop. This is "
+            << stopLifetime << "s.";
       }
     }
   }
