@@ -88,10 +88,12 @@ void CustomPhysicsList::ConstructProcess() {
           << "CustomPhysicsList: " << particle->GetParticleName() << "  PDGcode= " << particle->GetPDGEncoding()
           << "  Mass= " << particle->GetPDGMass() / GeV << " GeV.";
       if (pmanager) {
+
         if (particle->GetPDGCharge() != 0.0) {
           ph->RegisterProcess(new G4hMultipleScattering, particle);
           ph->RegisterProcess(new G4hIonisation, particle);
         }
+
         if (cp->GetCloud() && fHadronicInteraction &&
             (CustomPDGParser::s_isgluinoHadron(particle->GetPDGEncoding()) ||
              (CustomPDGParser::s_isstopHadron(particle->GetPDGEncoding())) ||
@@ -139,12 +141,31 @@ void CustomPhysicsList::ConstructProcess() {
           }
         }
         
-
         if (particle->GetParticleType() == "darkpho") {
           CMSDarkPairProductionProcess* darkGamma = new CMSDarkPairProductionProcess(dfactor);
           pmanager->AddDiscreteProcess(darkGamma);
         }
-        pmanager->DumpInfo();
+
+        //Set the multiple scattering process second to last, transportation to last in the AlongStep order. Last is 9999
+        G4ProcessVector* pv = pmanager->GetProcessList();
+        for (size_t i = 0; i < pv->size(); ++i) {
+          if ((*pv)[i]->GetProcessName() == "msc") {
+            pmanager->SetProcessOrdering((*pv)[i], idxAlongStep, 9998);
+            break;
+          }
+        }
+        for (size_t i = 0; i < pv->size(); ++i) {
+          if ((*pv)[i]->GetProcessName() == "Transportation") {
+            pmanager->SetProcessOrderingToLast((*pv)[i], idxAlongStep);
+            break;
+          }
+        }
+
+        G4ProcessVector* alongStepVec = pmanager->GetAlongStepProcessVector(typeGPIL); // typeGPIL for physical interaction length
+        for (size_t i = 0; i < alongStepVec->size(); ++i) {
+          edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: AlongStep Process " << i << " for " << particle->GetParticleName()
+                                                     << ": " << (*alongStepVec)[i]->GetProcessName() << "  . Order is: " << pmanager->GetProcessOrdering((*alongStepVec)[i], idxAlongStep);  
+        }
       }
     }
   }
