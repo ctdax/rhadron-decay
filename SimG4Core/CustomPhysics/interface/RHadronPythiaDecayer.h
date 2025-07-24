@@ -34,7 +34,7 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
 {
   public:
    RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile ); //Constructor
-   virtual ~RHadronPythiaDecayer() = default; //Destructor
+   virtual ~RHadronPythiaDecayer(); //Destructor
 
    G4VParticleChange* DecayIt(const G4Track& aTrack, const G4Step& aStep) override; //What Geant calls to decay the Rhadron
 

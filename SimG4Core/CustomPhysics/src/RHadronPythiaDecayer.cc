@@ -66,7 +66,7 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefin
     std::string line;
     std::ifstream command_stream(commandFile);
     if (!command_stream.is_open()) {
-      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer`: Could not open command file: " << commandFile;
+      edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Could not open command file: " << commandFile;
     }
     while(getline(command_stream, line)){
       pythia_->readString(line);
@@ -77,6 +77,11 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefin
 
   pythia_->init();
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 instance initialized.";
+}
+
+
+RHadronPythiaDecayer::~RHadronPythiaDecayer() {
+  if (GetExtDecayer() == this) SetExtDecayer(nullptr);
 }
 
 
