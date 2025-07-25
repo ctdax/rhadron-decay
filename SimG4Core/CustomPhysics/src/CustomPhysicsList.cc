@@ -86,7 +86,7 @@ void CustomPhysicsList::ConstructProcess() {
       G4ProcessManager* pmanager = particle->GetProcessManager();
       edm::LogVerbatim("SimG4CoreCustomPhysics")
           << "CustomPhysicsList: " << particle->GetParticleName() << "  PDGcode= " << particle->GetPDGEncoding()
-          << "  Mass= " << particle->GetPDGMass() / GeV << " GeV.";
+          << "  Mass= " << particle->GetPDGMass() / GeV << " GeV. Lifetime=" << particle->GetPDGLifeTime() / CLHEP::ns << " ns.";
       if (pmanager) {
 
         if (particle->GetPDGCharge() != 0.0) {
@@ -124,9 +124,6 @@ void CustomPhysicsList::ConstructProcess() {
         }
 
         // Add R-hadron decay
-        edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Particle name = " << particle->GetParticleName()
-                                                  << " Lifetime = " << particle->GetPDGLifeTime() / CLHEP::ns << " ns"
-                                                  << " Mass = " << particle->GetPDGMass() / GeV << " GeV";
         if (decay->IsApplicable(*particle)) {
           edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: Adding decay for " << particle->GetParticleName();
           pmanager->AddProcess(pythiaDecayProcess);
@@ -159,12 +156,6 @@ void CustomPhysicsList::ConstructProcess() {
             pmanager->SetProcessOrderingToLast((*pv)[i], idxAlongStep);
             break;
           }
-        }
-
-        G4ProcessVector* alongStepVec = pmanager->GetAlongStepProcessVector(typeGPIL); // typeGPIL for physical interaction length
-        for (size_t i = 0; i < alongStepVec->size(); ++i) {
-          edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomPhysicsList: AlongStep Process " << i << " for " << particle->GetParticleName()
-                                                     << ": " << (*alongStepVec)[i]->GetProcessName() << "  . Order is: " << pmanager->GetProcessOrdering((*alongStepVec)[i], idxAlongStep);  
         }
       }
     }

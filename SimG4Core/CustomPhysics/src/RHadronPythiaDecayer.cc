@@ -76,7 +76,6 @@ RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefin
   }
 
   pythia_->init();
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Pythia8 instance initialized.";
 }
 
 
@@ -87,16 +86,12 @@ RHadronPythiaDecayer::~RHadronPythiaDecayer() {
 
 G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
   // First call the standard DecayIt to generate secondaries
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Inside of RHadronPythiaDecayer::DecayIt!";
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Just ran G4Decay::DecayIt!";
 
   // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
   for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updating secondary particle " << i << " name is " << secondary->GetDefinition()->GetParticleName() << ". Initial position was " << secondary->GetPosition() << ". Displacement is " << secondaryDisplacements_[i];
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[i]);
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Updated position to " << secondary->GetPosition();
   }
 
   return fParticleChangeForDecay;
@@ -104,34 +99,36 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
 
 
 G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack){
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Importing decay products for track with ID " << aTrack.GetTrackID() << ". Name is " << aTrack.GetDefinition()->GetParticleName();
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Location is " << aTrack.GetPosition() << ". Velocity is " << aTrack.GetVelocity() / CLHEP::c_light << ". Momentum is " << aTrack.GetMomentum() / CLHEP::GeV << ". Proper time is " << aTrack.GetProperTime() << ". Global time is " << aTrack.GetGlobalTime();
+  // Initialize decay products. These will be used inside of G4Decay::DecayIt()
   G4DecayProducts * dp = new G4DecayProducts();
   dp->SetParentParticle( *(aTrack.GetDynamicParticle()) );
-
-  // get properties for later print outs
-  G4double E_initial = aTrack.GetDynamicParticle()->GetTotalEnergy();
-
-  // Outgoing particle
   std::vector<G4DynamicParticle*> particles;
 
-  // Use Pythia8 to decay the particle and import the decay products
+  // Use Pythia8 to decay the particle and add them to the particles vector
   pythiaDecay(aTrack, particles);
 
-  double E_final=0.0;
+  // Add the particles to the decay products
+  G4LorentzVector incoming_p4 = aTrack.GetDynamicParticle()->Get4Momentum();
+  G4LorentzVector outgoing_p4 = G4LorentzVector(0, 0, 0, 0);
   for (unsigned int i=0; i<particles.size(); ++i){
-    if (particles[i]) {
+    if (particles[i]){
       dp->PushProducts(particles[i]);
-      E_final += particles[i]->GetTotalEnergy();
+      outgoing_p4 += particles[i]->Get4Momentum();
     }
   }
 
-  if ((E_initial / CLHEP::GeV >= 1.01 * E_final / CLHEP::GeV) || (E_initial / CLHEP::GeV <= 0.99 * E_final / CLHEP::GeV)) {
-    edm::LogWarning("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Energy not conserved in decay. Initial energy = " << E_initial / CLHEP::GeV << " GeV. Final energy = " << E_final / CLHEP::GeV << " GeV.";
+  // Throw an error if any outgoing 4-momentum component is >= 5% different from the incoming 4-momentum component
+  if ((abs(outgoing_p4.px()) >= 1.05 * abs(incoming_p4.px()) || abs(outgoing_p4.px()) <= 0.95 * abs(incoming_p4.px())) ||
+      (abs(outgoing_p4.py()) >= 1.05 * abs(incoming_p4.py()) || abs(outgoing_p4.py()) <= 0.95 * abs(incoming_p4.py())) ||
+      (abs(outgoing_p4.pz()) >= 1.05 * abs(incoming_p4.pz()) || abs(outgoing_p4.pz()) <= 0.95 * abs(incoming_p4.pz())) ||
+      (abs(outgoing_p4.e() ) >= 1.05 * abs(incoming_p4.e() ) || abs(outgoing_p4.e() ) <= 0.95 * abs(incoming_p4.e() )) ||
+      ((outgoing_p4.px() > 0 && incoming_p4.px() < 0) || (outgoing_p4.px() < 0 && incoming_p4.px() > 0))               ||
+      ((outgoing_p4.py() > 0 && incoming_p4.py() < 0) || (outgoing_p4.py() < 0 && incoming_p4.py() > 0))               ||
+      ((outgoing_p4.pz() > 0 && incoming_p4.pz() < 0) || (outgoing_p4.pz() < 0 && incoming_p4.pz() > 0))                 )
+  {
+    edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer::ImportDecayProducts: Outgoing 4-momentum was significantly different than the incoming 4-momentum. Incoming 4-momentum = "
+                                            << incoming_p4 << ". Outgoing 4-momentum = " << outgoing_p4;
   }
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Total energy in was " << E_initial / CLHEP::GeV << " GeV, total energy out is " << E_final / CLHEP::GeV << " GeV.";
-
-  dp->DumpInfo();
 
   return dp;
 }
@@ -139,17 +136,18 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
 
 void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4DynamicParticle*> & particles)
 {
+  // Initialize the Pythia8 event where the decay will happen
   Pythia8::Event& event = pythia_->event;
   
+  // Fill the event with the Rhadron, strip it down to its constituents, i.e. gluino and quarks for a gluino R-hadron. Then finally let pythia handle the rest
   fillParticle(aTrack, event);
-  RHadronToConsituents(event);
+  RHadronToConstituents(event);
   pythia_->next();
 
   // Add the particles from the Pythia event into the Geant particle vector
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   for(int i=0; i<pythia_->event.size(); i++){
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Decay product " << i << " with ID " << pythia_->event[i].id() << " and status " << pythia_->event[i].status() << " has production vertex " << pythia_->event[i].vProd() << " and decay vertex " << pythia_->event[i].vDec();
-    if ( pythia_->event[i].status()<0 ) continue; // stable only
+    if ( pythia_->event[i].status()<0 ) continue; // Only add particles that are alive to the secondaries. Negative status codes indicate that the particle is not alive (e.g. decayed or absorbed).
     G4ThreeVector displacement(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
     G4ThreeVector momentum(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz());
     momentum *= 1000.0; // Convert GeV to MeV
@@ -161,8 +159,7 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
     }
 
     G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum); // Create the dynamic particle and add it to Geant
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Adding " << particleDefinition->GetParticleName() << " with ID " << pythia_->event[i].id() << " and momentum " << momentum << " MeV to Geant.";
-    particles.push_back( dynamicParticle );
+    particles.push_back(dynamicParticle);
     secondaryDisplacements_.push_back(displacement); // Store the position of the secondary particle to update in RHadronPythiaDecayer::DecayIt
   }
 }
@@ -183,10 +180,14 @@ void RHadronPythiaDecayer::fillParticle(const G4Track& aTrack, Pythia8::Event& e
 }
 
 
-void RHadronPythiaDecayer::RHadronToConsituents(Pythia8::Event& event) {
+void RHadronPythiaDecayer::RHadronToConstituents(Pythia8::Event& event) {
+  // This code is very similar to Pythia8::RHadrons::decay(). Unfortunately, it is not possible in this scenario to use Pythia8::RHadrons::decay().
+  // Because we need to use a new instance of pythia, the value of nRHad inside of Pythia8::RHadrons is set to 0 and the for loop inside of Pythia8::RHadrons::decay() never runs.
+  // As far as I'm aware, it is impossible to update nRHad without first producing R-hadrons with the pythia instance, which is not what we want to do.
+  // So, in lieu of this, code from Pythia8::RHadrons::decay() has been pasted here rather than used directly.
+
   Pythia8::ParticleData& pdt = pythia_->particleData;
 
-  // Copy and paste of RHadron decay code
   int    iRNow  = 1;
   int    idRHad = event[iRNow].id();
   double mRHad  = event[iRNow].m();
@@ -219,17 +220,9 @@ void RHadronPythiaDecayer::RHadronToConsituents(Pythia8::Event& event) {
 
   // Fraction of the RHadron mass given by the sparticle
   double fracR = mRBef / mRHad;
-  int counter=0;
-  while (fracR>=1.){
-    if (counter==10){
-      G4cout << "Needed more than 10 attempts with constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << G4endl;
-    } else if (counter>100){
-      G4cout << "Pythia8ForDecays::Py1ent ERROR   Failed >100 times. Constituent " << idRBef << " mass (" << mRBef << " above R-Hadron " << idRHad << " mass " << mRHad << G4endl;
-      return;
-    }
-    mRBef = pdt.mSel(idRBef);
-    fracR = mRBef / mRHad;
-    counter++;
+  if (fracR>=1.){
+    edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer::RhadronToConstituents: R-hadron mass too low for decay.";
+    return;
   }
 
   // Squark case
@@ -278,7 +271,6 @@ void RHadronPythiaDecayer::RHadronToConsituents(Pythia8::Event& event) {
 
 std::pair<int,int> RHadronPythiaDecayer::fromIdWithSquark( int idRHad) const
 {
-
   // Find squark flavour content.
   int idRSb            = pythia_->settings.mode("RHadrons:idSbottom");
   int idRSt            = pythia_->settings.mode("RHadrons:idStop");
@@ -292,12 +284,10 @@ std::pair<int,int> RHadronPythiaDecayer::fromIdWithSquark( int idRHad) const
   if (id2 > 10) id2 = 100 * id2 + abs(idRHad)%10;
   if ((id2 < 10 && idRHad > 0) || (id2 > 10 && idRHad < 0)) id2 = -id2;
 
-  // Done.
   return std::make_pair( id1, id2);
-
 }
 
-// TODO: Would be nice for this to be a public function in Pythia8::RHadrons.hh
+
 std::pair<int,int> RHadronPythiaDecayer::fromIdWithGluino( int idRHad, Pythia8::Rndm* rndmPtr) const
 {
   // Find light flavour content of R-hadron.
@@ -350,9 +340,7 @@ std::pair<int,int> RHadronPythiaDecayer::fromIdWithGluino( int idRHad, Pythia8::
     id2   = -idTmp;
   }
 
-  // Done.
   return std::make_pair( id1, id2);
-
 }
 
 
@@ -373,5 +361,4 @@ bool RHadronPythiaDecayer::isGluinoRHadron(int pdgId) const
 
   // This is not a gluino R-Hadron (probably a squark R-Hadron)
   return false;
-
 }

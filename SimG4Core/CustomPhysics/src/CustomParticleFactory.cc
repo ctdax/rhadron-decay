@@ -52,19 +52,14 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
   G4double gluinoLifetime = -1.0; // Default value for the lifetime of the gluino, will be set if a gluino decay is found in the file
   G4double stopLifetime = -1.0; // Default value for the lifetime of the stop, will be set if a stop decay is found in the file
   while (getline(configFile, line)) {
-    edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Processing line: " << line;
     line.erase(0, line.find_first_not_of(" \t"));  // Remove leading whitespace.
-    if (line.length() == 0 || line.at(0) == '#') {
-      edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Skipping line: " << line;
-      continue;
-    }  // Skip blank lines and comments.
+    if (line.length() == 0 || line.at(0) == '#') continue; // Skip blank lines and comments.
     // The mass table begins with a line containing "BLOCK MASS"
     if (ToLower(line).find("block") < line.npos && ToLower(line).find("mass") < line.npos) {
       edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Retrieving mass table.";
       getMassTable(&configFile);
     }
     if (line.find("DECAY") < line.npos) {
-      edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Found a decay entry in the file.";
       int pdgId;
       double width;
       std::string tmpString;
@@ -127,8 +122,6 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       }
     }
   }
-
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "CustomParticleFactory: Ran into issue at: " << line;
 #ifdef G4MULTITHREADED
   G4MUTEXUNLOCK(&customParticleFactoryMutex);
 #endif
