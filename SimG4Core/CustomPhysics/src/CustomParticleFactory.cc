@@ -69,30 +69,30 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
       edm::LogVerbatim("SimG4CoreCustomPhysics")
           << "CustomParticleFactory: entry to G4DecayTable: pdgID, width " << pdgId << ",  " << width;
       G4ParticleDefinition *aParticle = theParticleTable->FindParticle(pdgId);
+      G4ParticleDefinition *aAntiParticle = theParticleTable->FindAntiParticle(pdgId);
       if (nullptr == aParticle || width == 0.0) { // Skip if particle is stable or not found
         continue;
       }
-      if (pdgId == 1000021) { // Set the gluino RhadronLifetime to the gluino lifetime. Skip the decay table of the gluino. The decay table will be passed to the RhadronPythiaDecayer
-        gluinoLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s;
-        continue;
-      }
-      if (pdgId == 1000006) { // Set the stop RhadronLifetime to the stop lifetime. Skip the decay table of the stop. The decay table will be passed to the RhadronPythiaDecayer
-        stopLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s;
-        continue;
-      }
-
-      G4DecayTable *aDecayTable = getDecayTable(&configFile, pdgId);
-      aParticle->SetDecayTable(aDecayTable);
-      aParticle->SetPDGStable(false);
-      aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
-
-      if (pdgId < 999999 || pdgId > 2000015) { // Do not handle anti decay tables for SUSY particles
-        G4ParticleDefinition *aAntiParticle = theParticleTable->FindAntiParticle(pdgId);
+      if (pdgId == 1000021) gluinoLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s; // Set the gluino RhadronLifetime to the gluino lifetime.
+      if (pdgId == 1000006) stopLifetime = 1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s; // Set the stop RhadronLifetime to the stop lifetime.
+      
+      try {
+        G4DecayTable *aDecayTable = getDecayTable(&configFile, pdgId);
+        aParticle->SetDecayTable(aDecayTable);
+        aParticle->SetPDGStable(false);
+        aParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
         if (nullptr != aAntiParticle && aAntiParticle->GetPDGEncoding() != pdgId) {
           aAntiParticle->SetDecayTable(getAntiDecayTable(pdgId, aDecayTable));
           aAntiParticle->SetPDGStable(false);
           aAntiParticle->SetPDGLifeTime(1.0 / (width * CLHEP::GeV) * 6.582122e-22 * CLHEP::MeV * CLHEP::s);
         }
+      }
+      catch (const std::exception &e) {
+        edm::LogError("SimG4CoreCustomPhysics") << "CustomParticleFactory: Error while reading decay table for pdgID " << pdgId << ": " << e.what()
+                                                << ". Setting the particle and antiparticle to stable.";
+        aParticle->SetPDGStable(true);
+        if (nullptr != aAntiParticle && aAntiParticle->GetPDGEncoding() != pdgId) aAntiParticle->SetPDGStable(true);
+        continue;
       }
     }
   }
@@ -445,6 +445,11 @@ G4DecayTable *CustomParticleFactory::getAntiDecayTable(int pdgId, G4DecayTable *
     G4VDecayChannel *theDecayChannel = theDecayTable->GetDecayChannel(i);
     int nd = std::min(4, theDecayChannel->GetNumberOfDaughters());
     for (int j = 0; j < nd; ++j) {
+      G4ParticleDefinition *antiParticle = theDecayChannel->GetDaughter(j);
+      if (antiParticle == nullptr) {
+        edm::LogWarning("SimG4CoreCustomPhysics") << "CustomParticleFactory: Daughter " << j << " in decay channel " << i << " for pdgId " << pdgId << " is nullptr. Skipping it.";
+        continue;
+      }
       int id = theDecayChannel->GetDaughter(j)->GetAntiPDGEncoding();
       G4ParticleDefinition *part = theParticleTable->FindParticle(id);
       if (nullptr == part) {
