@@ -26,10 +26,10 @@ process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-options.register('mass', 1800,
+options.register('mass', 500,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.int,
-    "Mass of the gluino"
+    "Mass of the stop"
 )
 
 options.parseArguments()
@@ -95,16 +95,14 @@ process.dirhadrongenfilter = cms.EDFilter("MCParticlePairFilter",
     MinPt = cms.untracked.vdouble(0.0, 0.0),
     ParticleCharge = cms.untracked.int32(0),
     ParticleID1 = cms.untracked.vint32( 
-        1000993, 1009213, 1009313, 1009323, 1009113, 
-        1009223, 1009333, 1091114, 1092114, 1092214, 
-        1092224, 1093114, 1093214, 1093224, 1093314, 
-        1093324, 1093334
+        1000612, 1000622, 1000632, 1000642, 1000652,
+        1006113, 1006211, 1006213, 1006223, 1006311, 
+        1006313, 1006321, 1006323, 1006333
     ),
     ParticleID2 = cms.untracked.vint32(
-        1000993, 1009213, 1009313, 1009323, 1009113, 
-        1009223, 1009333, 1091114, 1092114, 1092214, 
-        1092224, 1093114, 1093214, 1093224, 1093314, 
-        1093324, 1093334
+        1000612, 1000622, 1000632, 1000642, 1000652,
+        1006113, 1006211, 1006213, 1006223, 1006311, 
+        1006313, 1006321, 1006323, 1006333
     ),
     Status = cms.untracked.vint32(1, 1)
 )
@@ -119,8 +117,9 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
         ),
         processParameters = cms.vstring(
             'SUSY:all = off', 
-            'SUSY:gg2gluinogluino = on', 
-            'SUSY:qqbar2gluinogluino = on', 
+            'SUSY:gg2squarkantisquark = on', 
+            'SUSY:qqbar2squarkantisquark = on', 
+            'SUSY:qq2squarksquark = on',
             'RHadrons:allow = on', 
             'RHadrons:allowDecay = off', 
             'RHadrons:setMasses = on', 
@@ -155,23 +154,23 @@ process.generator = cms.EDFilter("Pythia8ConcurrentGeneratorFilter",
             'Check:epTolErr = 0.01', 
             'Beams:setProductionScalesFromLHEF = off', 
             #'SLHA:keepSM = on', COMMENTED OUT DUE TO ERROR
-            'SLHA:minMassSM = 1000.', 
+            'SLHA:minMassSM = 100.', 
             'ParticleDecays:limitTau0 = on', 
             'ParticleDecays:tau0Max = 10', 
             'ParticleDecays:allowPhotonRadiation = on',
-            '1000021:mayDecay = off'
+            '1000006:mayDecay = off'
         )
     ),
-    SLHAFileForPythia8 = cms.string('SimG4Core/CustomPhysics/data/TESTDECAY_GLUINO1800.txt'),
+    SLHAFileForPythia8 = cms.string('SimG4Core/CustomPhysics/data/TESTDECAY_GLUINO1800_STOP500.txt'),
     comEnergy = cms.double(13000.0),
     crossSection = cms.untracked.double(-1),
-    hscpFlavor = cms.untracked.string('gluino'),
+    hscpFlavor = cms.untracked.string('stop'),
     massPoint = cms.untracked.int32(options.mass),
     maxEventsToPrint = cms.untracked.int32(0),
     #particleFile = cms.untracked.string('SimG4Core/CustomPhysics/data/TESTDECAY_GLUINO1800.txt'),
-    RhadronPythiaDecayerCommandFile = cms.untracked.string('SimG4Core/CustomPhysics/data/RhadronPythiaDecayerCommands.txt'),
+    #RhadronPythiaDecayerCommandFile = cms.untracked.string('SimG4Core/CustomPhysics/data/RhadronPythiaDecayerCommands.txt'),
     #pdtFile = cms.FileInPath('Configuration/Generator/data/hscppythiapdtgluino1800.tbl'),
-    processFile = cms.untracked.string('SimG4Core/CustomPhysics/data/RhadronProcessList.txt'),
+    processFile = cms.untracked.string('SimG4Core/CustomPhysics/data/stophadronProcessList.txt'),
     pythiaHepMCVerbosity = cms.untracked.bool(False),
     pythiaPylistVerbosity = cms.untracked.int32(0),
     #slhaFile = cms.untracked.string('Configuration/Generator/data/TESTDECAY_GLUINO1800.txt'),

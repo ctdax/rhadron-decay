@@ -8,10 +8,11 @@
 
 # CONTROL CENTER ----------------------
 
-mass=1800
-events=10
+mass=500
+events=25
+flavor="stop" # gluino or stop
 cmEnergy="13TeV"
-prefix="test_NoDecayTable"
+prefix="~t->t_or_b_andNeutralino_25ns"
 gensim=true
 eventdisplay=true # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
 
@@ -36,7 +37,18 @@ if $gensim; then
 
     if [ ! -f data/$dir_name/$genSimRoot ]; then
         echo "Starting step 0: GEN-SIM"
-        cmsRun simulate_rhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
+        
+        if [ "$flavor" = "gluino" ]; then
+            echo "Generating $events gluino R-hadrons events with mass $mass GeV"
+            cmsRun simulate_gluinoRhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
+        elif [ "$flavor" = "stop" ]; then
+            echo "Generating $events stop R-hadrons events with mass $mass GeV"
+            cmsRun simulate_stopRhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
+        else
+            echo "Invalid flavor specified. Please use 'gluino' or 'stop'."
+            exit 1
+        fi
+
         echo "Step 0 completed"
     fi
 
