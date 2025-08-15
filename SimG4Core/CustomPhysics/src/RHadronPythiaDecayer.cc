@@ -85,7 +85,8 @@ RHadronPythiaDecayer::~RHadronPythiaDecayer() {
 
 
 G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
-  // First call the standard DecayIt to generate secondaries
+  // First, clear the secondary displacements and call the standard DecayIt to generate secondaries
+  secondaryDisplacements_.clear();
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
 
   // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
