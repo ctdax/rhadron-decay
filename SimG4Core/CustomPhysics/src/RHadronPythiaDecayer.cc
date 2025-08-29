@@ -90,9 +90,11 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
 
   // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
+  G4int secondaryDisplacementIndex = 0;
   for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
-    secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[i]);
+    secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[secondaryDisplacementIndex]);
+    ++secondaryDisplacementIndex;
   }
 
   return fParticleChangeForDecay;
@@ -148,7 +150,15 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
   // Add the particles from the Pythia event into the Geant particle vector
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   for(int i=0; i<pythia_->event.size(); i++){
-    if ( pythia_->event[i].status()<0 ) continue; // Only add particles that are alive to the secondaries. Negative status codes indicate that the particle is not alive (e.g. decayed or absorbed).
+    // If the particle status is negative and it decays outside of the vertex, change the status to positive and do not add its decay products. If its status is negative but it decays inside the detector, skip it.
+    G4double rProd = std::sqrt(std::pow(pythia_->event[i].xProd(), 2) + std::pow(pythia_->event[i].yProd(), 2));
+    G4double rDec = std::sqrt(std::pow(pythia_->event[i].xDec(), 2) + std::pow(pythia_->event[i].yDec(), 2));
+    G4double zProd = std::abs(pythia_->event[i].zProd());
+    G4double zDec = std::abs(pythia_->event[i].zDec());
+    if (pythia_->event[i].status() < 0 && (rDec > 7500.0 || zDec > 10600.0)) pythia_->event[i].statusPos(); // Units here are mm
+    else if (pythia_->event[i].status() < 0) continue;
+    if (rProd > 7500.0 || zProd > 10600.0) continue;
+
     G4ThreeVector displacement(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
     G4ThreeVector momentum(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz());
     momentum *= 1000.0; // Convert GeV to MeV
