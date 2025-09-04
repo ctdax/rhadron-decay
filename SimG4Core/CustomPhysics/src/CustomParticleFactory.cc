@@ -105,7 +105,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
         particle->SetPDGLifeTime(gluinoLifetime);
         edm::LogVerbatim("SimG4CoreCustomPhysics")
             << "CustomParticleFactory: Setting lifetime for " << particle->GetParticleName() << " equal to lifetime of the gluino. This is "
-            << gluinoLifetime << "s.";
+            << gluinoLifetime << "ns.";
       }
     }
   }
@@ -118,7 +118,7 @@ void CustomParticleFactory::loadCustomParticles(const std::string &filePath) {
         particle->SetPDGLifeTime(stopLifetime);
         edm::LogVerbatim("SimG4CoreCustomPhysics")
             << "CustomParticleFactory: Setting lifetime for " << particle->GetParticleName() << " equal to lifetime of the stop. This is "
-            << stopLifetime << "s.";
+            << stopLifetime << "ns.";
       }
     }
   }
