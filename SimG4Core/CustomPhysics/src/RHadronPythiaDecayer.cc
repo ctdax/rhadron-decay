@@ -160,8 +160,8 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
     if (rProd > 7500.0 || zProd > 10600.0) continue;
 
     G4ThreeVector displacement(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
-    G4ThreeVector momentum(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz());
-    momentum *= 1000.0; // Convert GeV to MeV
+    G4LorentzVector p4(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz(), pythia_->event[i].e());
+    p4 *= 1000.0; // Convert GeV to MeV
 
     const G4ParticleDefinition* particleDefinition = particleTable->FindParticle(pythia_->event[i].id()); // Get the particle definition from the Pythia event
     if (!particleDefinition){
@@ -169,7 +169,7 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
       continue;
     }
 
-    G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, momentum); // Create the dynamic particle and add it to Geant
+    G4DynamicParticle* dynamicParticle = new G4DynamicParticle(particleDefinition, p4); // Create the dynamic particle and add it to Geant
     particles.push_back(dynamicParticle);
     secondaryDisplacements_.push_back(displacement); // Store the position of the secondary particle to update in RHadronPythiaDecayer::DecayIt
   }

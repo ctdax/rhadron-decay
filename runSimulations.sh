@@ -9,12 +9,12 @@
 # CONTROL CENTER ----------------------
 
 mass=500
-events=25
+events=2
 flavor="stop" # gluino or stop
 cmEnergy="13TeV"
-prefix="~t->t_or_b_andNeutralino_25ns"
+prefix="~t->t_or_b_andNeutralino_25ns_quickTest"
 gensim=true
-eventdisplay=true # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
+eventdisplay=false # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
 
 # -------------------------------------
 
