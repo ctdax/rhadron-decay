@@ -11,6 +11,7 @@
 #include "G4ParticleDefinition.hh"
 #include "G4ParticleTable.hh"
 #include "G4ThreeVector.hh"
+#include "G4TransportationManager.hh"
 #include "TLorentzVector.h"
 
 #include "Pythia8/Pythia.h"
@@ -141,6 +142,11 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
 {
   // Initialize the Pythia8 event where the decay will happen
   Pythia8::Event& event = pythia_->event;
+
+  // Store the decay location and world volume to later check if decay products are inside the world volume
+  G4ThreeVector RHadronDecayLocation = aTrack.GetPosition();
+  G4VPhysicalVolume* worldPhys = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking()->GetWorldVolume();
+  G4VSolid* worldSolid = worldPhys->GetLogicalVolume()->GetSolid();
   
   // Fill the event with the Rhadron, strip it down to its constituents, i.e. gluino and quarks for a gluino R-hadron. Then finally let pythia handle the rest
   fillParticle(aTrack, event);
@@ -151,13 +157,11 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
   for(int i=0; i<pythia_->event.size(); i++){
     // If the particle status is negative and it decays outside of the vertex, change the status to positive and do not add its decay products. If its status is negative but it decays inside the detector, skip it.
-    G4double rProd = std::sqrt(std::pow(pythia_->event[i].xProd(), 2) + std::pow(pythia_->event[i].yProd(), 2));
-    G4double rDec = std::sqrt(std::pow(pythia_->event[i].xDec(), 2) + std::pow(pythia_->event[i].yDec(), 2));
-    G4double zProd = std::abs(pythia_->event[i].zProd());
-    G4double zDec = std::abs(pythia_->event[i].zDec());
-    if (pythia_->event[i].status() < 0 && (rDec > 7500.0 || zDec > 10600.0)) pythia_->event[i].statusPos(); // Units here are mm
+    G4ThreeVector vProd = RHadronDecayLocation + G4ThreeVector(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
+    G4ThreeVector vDec = RHadronDecayLocation + G4ThreeVector(pythia_->event[i].xDec(), pythia_->event[i].yDec(), pythia_->event[i].zDec());
+    if (pythia_->event[i].status() < 0 && (worldSolid->Inside(vDec) == kOutside)) pythia_->event[i].statusPos(); // Units here are mm
     else if (pythia_->event[i].status() < 0) continue;
-    if (rProd > 7500.0 || zProd > 10600.0) continue;
+    if (worldSolid->Inside(vProd) == kOutside) continue;
 
     G4ThreeVector displacement(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
     G4LorentzVector p4(pythia_->event[i].px(), pythia_->event[i].py(), pythia_->event[i].pz(), pythia_->event[i].e());

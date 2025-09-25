@@ -9,7 +9,7 @@
 # CONTROL CENTER ----------------------
 
 mass=500
-events=2
+events=10
 flavor="stop" # gluino or stop
 cmEnergy="13TeV"
 prefix="~t->t_or_b_andNeutralino_25ns_quickTest"
