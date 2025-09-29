@@ -13,8 +13,9 @@ events=1
 flavor="gluino" # gluino or stop
 cmEnergy="13TeV"
 #prefix="stop2t_or_b_andNeutralino_25ns_quickTest"
-prefix="g2qq_andNeutralino_50ns"
+prefix="g2qq_andNeutralino_50ns_run3"
 gensim=true
+reco=true
 eventdisplay=true # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display
 
 # -------------------------------------
@@ -34,6 +35,16 @@ fi
 # gen-sim output files
 genSimRoot=$prefix"_gensimM"$mass"_"$events"Events.root"
 
+# digi-L1-digi2ray output files
+digiRawRoot="digirawM"$mass"_"$events"Events.root"
+digiRawOut="digirawM"$mass"_"$events"Events.out"
+
+# reco output files
+hltRoot="hltM"$mass"_"$events"Events.root"
+hltOut="hltM"$mass"_"$events"Events.out"
+recoRoot="recoM"$mass"_"$events"Events.root"
+recoOut="recoM"$mass"_"$events"Events.out"
+
 if $gensim; then
 
     if [ ! -f data/$dir_name/$genSimRoot ]; then
@@ -41,10 +52,10 @@ if $gensim; then
         
         if [ "$flavor" = "gluino" ]; then
             echo "Generating $events gluino R-hadrons events with mass $mass GeV"
-            cmsRun simulate_gluinoRhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
+            cmsRun simulate_gluinoRhadron_decays_Run3.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
         elif [ "$flavor" = "stop" ]; then
             echo "Generating $events stop R-hadrons events with mass $mass GeV"
-            cmsRun simulate_stopRhadron_decays.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
+            cmsRun simulate_stopRhadron_decays_Run3.py maxEvents=$events mass=$mass outputFile=data/$dir_name/$genSimRoot > "data/$dir_name/terminalOutput.log"
         else
             echo "Invalid flavor specified. Please use 'gluino' or 'stop'."
             exit 1
@@ -54,6 +65,41 @@ if $gensim; then
     fi
 
 fi
+
+if $reco; then
+
+    if [ ! -f data/$dir_name/$digiRawRoot ]; then
+        echo "Starting step 1: DIGI-L1-DIGI2RAW"
+        cmsDriver.py --filein file:data/$dir_name/$genSimRoot \
+            --fileout file:data/$dir_name/$digiRawRoot\
+            --mc \
+            --eventcontent RAWSIM \
+            --datatier GEN-SIM-RAW \
+            --conditions 140X_mcRun3_2024_realistic_v11 \
+            --step DIGI,L1,DIGI2RAW \
+            --python_filename data/$dir_name/step1_cfg.py \
+            --era Run3_2024 \
+            -n -1 >& data/$dir_name/$digiRawOut
+        echo "Step 1 completed"
+    fi
+
+    if [ ! -f data/$dir_name/$recoRoot ]; then
+        echo "Starting step 2: RAW2DIGI-L1Reco-RECO"
+        cmsDriver.py --filein file:data/$dir_name/$digiRawRoot \
+            --fileout file:data/$dir_name/$recoRoot \
+            --mc \
+            --eventcontent FEVTDEBUGHLT \
+            --datatier AODSIM \
+            --conditions 140X_mcRun3_2024_realistic_v11 \
+            --step RAW2DIGI,L1Reco,RECO \
+            --python_filename data/$dir_name/step2_cfg.py \
+            --era Run3_2024 \
+            -n -1 >& data/$dir_name/$recoOut
+        echo "Step 2 completed"
+    fi
+    
+fi
+
 
 if $eventdisplay; then
 

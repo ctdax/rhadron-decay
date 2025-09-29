@@ -159,7 +159,7 @@ void RHadronPythiaDecayer::pythiaDecay(const G4Track& aTrack, std::vector<G4Dyna
     // If the particle status is negative and it decays outside of the vertex, change the status to positive and do not add its decay products. If its status is negative but it decays inside the detector, skip it.
     G4ThreeVector vProd = RHadronDecayLocation + G4ThreeVector(pythia_->event[i].xProd(), pythia_->event[i].yProd(), pythia_->event[i].zProd());
     G4ThreeVector vDec = RHadronDecayLocation + G4ThreeVector(pythia_->event[i].xDec(), pythia_->event[i].yDec(), pythia_->event[i].zDec());
-    if (pythia_->event[i].status() < 0 && (worldSolid->Inside(vDec) == kOutside)) pythia_->event[i].statusPos(); // Units here are mm
+    if (pythia_->event[i].status() < 0 && (worldSolid->Inside(vDec) == kOutside)) pythia_->event[i].statusPos();
     else if (pythia_->event[i].status() < 0) continue;
     if (worldSolid->Inside(vProd) == kOutside) continue;
 
