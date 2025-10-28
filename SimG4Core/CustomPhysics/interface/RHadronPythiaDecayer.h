@@ -1,6 +1,7 @@
 #ifndef RHadronPythiaDecayer_H
 #define RHadronPythiaDecayer_H
 
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "G4Decay.hh"
 #include "G4VExtDecayer.hh"
 #include "G4ThreeVector.hh"
@@ -30,11 +31,12 @@ class G4DecayProducts;
 class G4VParticleChange;
 class G4Step;
 class G4Track;
+class EndOfEvent;
 class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
 {
   public:
-   RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile ); //Constructor
-   virtual ~RHadronPythiaDecayer(); //Destructor
+   RHadronPythiaDecayer(edm::ParameterSet const& p);
+   virtual ~RHadronPythiaDecayer();
 
    G4VParticleChange* DecayIt(const G4Track& aTrack, const G4Step& aStep) override; //What Geant calls to decay the Rhadron
 
@@ -52,6 +54,8 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
    void fillParticle(const G4Track&, Pythia8::Event& event) const; //Fill a Pythia8 event with the information from a G4Track
 
    void pythiaDecay(const G4Track&, std::vector<G4DynamicParticle*> &); //Function to decay the RHadron and return products in G4 format
+
+   void storeDecayInfo(const G4Track& aTrack); // Store decay information to be used later by produce
 
    std::unique_ptr<Pythia8::Pythia> pythia_; // Instance of pythia
    std::vector<G4ThreeVector> secondaryDisplacements_;

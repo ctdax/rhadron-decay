@@ -1,4 +1,5 @@
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayer.h"
+#include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
 
 #include "CLHEP/Random/RandomEngine.h"
 #include "CLHEP/Vector/LorentzVector.h"
@@ -19,6 +20,9 @@
 #include "GeneratorInterface/Pythia8Interface/interface/P8RndmEngine.h"
 #include "FWCore/ServiceRegistry/interface/RandomEngineSentry.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "SimG4Core/Notification/interface/EndOfEvent.h"
 
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenParticle.h"
@@ -36,9 +40,12 @@
 
 static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
 
-RHadronPythiaDecayer::RHadronPythiaDecayer( const std::string& SLHAParticleDefinitionsFile, const std::string& commandFile )
+RHadronPythiaDecayer::RHadronPythiaDecayer(edm::ParameterSet const& p)
  : pythia_(new Pythia8::Pythia())
 {
+  std::string SLHAParticleDefinitionsFile = p.getParameter<edm::FileInPath>("particlesDef").fullPath();
+  std::string commandFile = p.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath();
+
   // Initialize the Pythia8 instance for R-hadron decays
   edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Initializing Pythia8 instance for R-hadron decays.";
 
@@ -87,14 +94,17 @@ RHadronPythiaDecayer::~RHadronPythiaDecayer() {
 
 G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
   // First, clear the secondary displacements and call the standard DecayIt to generate secondaries
+  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Decaying particle with PDGID " << aTrack.GetDefinition()->GetPDGEncoding();
   secondaryDisplacements_.clear();
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
+  storeDecayInfo(aTrack); // Store info for the parent Rhadron
 
   // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
   G4int secondaryDisplacementIndex = 0;
   for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[secondaryDisplacementIndex]);
+    storeDecayInfo(aTrack); // Store info for the secondaries
     ++secondaryDisplacementIndex;
   }
 
@@ -376,4 +386,21 @@ bool RHadronPythiaDecayer::isGluinoRHadron(int pdgId) const
 
   // This is not a gluino R-Hadron (probably a squark R-Hadron)
   return false;
+}
+
+
+void RHadronPythiaDecayer::storeDecayInfo(const G4Track& aTrack)
+{
+  int id = aTrack.GetDefinition()->GetPDGEncoding();
+  float x = aTrack.GetPosition().x()/CLHEP::cm;
+  float y = aTrack.GetPosition().y()/CLHEP::cm;
+  float z = aTrack.GetPosition().z()/CLHEP::cm;
+  float t = aTrack.GetGlobalTime()/CLHEP::ns;
+  float px = aTrack.GetMomentum().x()/CLHEP::GeV;
+  float py = aTrack.GetMomentum().y()/CLHEP::GeV;
+  float pz = aTrack.GetMomentum().z()/CLHEP::GeV;
+  float e  = aTrack.GetTotalEnergy()/CLHEP::GeV;
+
+  // Store in shared data manager
+  RHadronPythiaDecayDataManager::getInstance().addDecayInfo(id, x, y, z, t, px, py, pz, e);
 }

@@ -65,7 +65,7 @@ void CustomPhysicsList::ConstructProcess() {
   // Set the pythia decayer for Rhadrons. RhadronPythiaDecayerCommandFile is an optional file that can be passed in the python config file to modify pythia settings for the Rhadron decays
   G4Decay* decay = new G4Decay(); // Used to check if decay is applicable for particles
   const std::string RhadronPythiaDecayerCommandFile = myConfig.getParameter<edm::FileInPath>("RhadronPythiaDecayerCommandFile").fullPath();
-  G4Decay* pythiaDecayProcess = new RHadronPythiaDecayer(particleDefFilePath, RhadronPythiaDecayerCommandFile);
+  G4Decay* pythiaDecayProcess = new RHadronPythiaDecayer(myConfig);
   G4VExtDecayer* extDecayer = dynamic_cast<G4VExtDecayer*>(pythiaDecayProcess);
   pythiaDecayProcess->SetExtDecayer(extDecayer); // Set the external decayer to itself. Seems redundant but is necessary as far as I can tell. Without doing this, RHadronPythiaDecayer::ImportDecayProducts() will not be called.
 
