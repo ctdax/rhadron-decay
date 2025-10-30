@@ -31,7 +31,6 @@ class G4DecayProducts;
 class G4VParticleChange;
 class G4Step;
 class G4Track;
-class EndOfEvent;
 class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
 {
   public:

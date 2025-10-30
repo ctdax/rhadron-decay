@@ -1,6 +1,5 @@
 #include "SimG4Core/CustomPhysics/interface/RHDecayTracer.h"
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Framework/interface/Event.h"
 
 RHDecayTracer::RHDecayTracer(edm::ParameterSet const& p) {

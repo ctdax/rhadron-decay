@@ -20,9 +20,6 @@
 #include "GeneratorInterface/Pythia8Interface/interface/P8RndmEngine.h"
 #include "FWCore/ServiceRegistry/interface/RandomEngineSentry.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/EventSetup.h"
-#include "SimG4Core/Notification/interface/EndOfEvent.h"
 
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenParticle.h"
@@ -94,7 +91,6 @@ RHadronPythiaDecayer::~RHadronPythiaDecayer() {
 
 G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
   // First, clear the secondary displacements and call the standard DecayIt to generate secondaries
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer: Decaying particle with PDGID " << aTrack.GetDefinition()->GetPDGEncoding();
   secondaryDisplacements_.clear();
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
   storeDecayInfo(aTrack); // Store info for the parent Rhadron
@@ -122,26 +118,8 @@ G4DecayProducts* RHadronPythiaDecayer::ImportDecayProducts(const G4Track& aTrack
   pythiaDecay(aTrack, particles);
 
   // Add the particles to the decay products
-  G4LorentzVector incoming_p4 = aTrack.GetDynamicParticle()->Get4Momentum();
-  G4LorentzVector outgoing_p4 = G4LorentzVector(0, 0, 0, 0);
   for (unsigned int i=0; i<particles.size(); ++i){
-    if (particles[i]){
-      dp->PushProducts(particles[i]);
-      outgoing_p4 += particles[i]->Get4Momentum();
-    }
-  }
-
-  // Throw an error if any outgoing 4-momentum component is >= 5% different from the incoming 4-momentum component
-  if ((abs(outgoing_p4.px()) >= 1.05 * abs(incoming_p4.px()) || abs(outgoing_p4.px()) <= 0.95 * abs(incoming_p4.px())) ||
-      (abs(outgoing_p4.py()) >= 1.05 * abs(incoming_p4.py()) || abs(outgoing_p4.py()) <= 0.95 * abs(incoming_p4.py())) ||
-      (abs(outgoing_p4.pz()) >= 1.05 * abs(incoming_p4.pz()) || abs(outgoing_p4.pz()) <= 0.95 * abs(incoming_p4.pz())) ||
-      (abs(outgoing_p4.e() ) >= 1.05 * abs(incoming_p4.e() ) || abs(outgoing_p4.e() ) <= 0.95 * abs(incoming_p4.e() )) ||
-      ((outgoing_p4.px() > 0 && incoming_p4.px() < 0) || (outgoing_p4.px() < 0 && incoming_p4.px() > 0))               ||
-      ((outgoing_p4.py() > 0 && incoming_p4.py() < 0) || (outgoing_p4.py() < 0 && incoming_p4.py() > 0))               ||
-      ((outgoing_p4.pz() > 0 && incoming_p4.pz() < 0) || (outgoing_p4.pz() < 0 && incoming_p4.pz() > 0))                 )
-  {
-    edm::LogError("SimG4CoreCustomPhysics") << "RHadronPythiaDecayer::ImportDecayProducts: Outgoing 4-momentum was significantly different than the incoming 4-momentum. Incoming 4-momentum = "
-                                            << incoming_p4 << ". Outgoing 4-momentum = " << outgoing_p4;
+    if (particles[i]) dp->PushProducts(particles[i]);
   }
 
   return dp;
