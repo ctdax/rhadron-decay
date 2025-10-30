@@ -10,11 +10,6 @@
 #include <utility>
 #include <memory>
 
-//////////////////////////
-// Author: C. Thompson  //
-// Date: May 29th, 2025 //
-//////////////////////////
-
 namespace gen {
   class P8RndmEngine;
   typedef std::shared_ptr<P8RndmEngine> P8RndmEnginePtr;

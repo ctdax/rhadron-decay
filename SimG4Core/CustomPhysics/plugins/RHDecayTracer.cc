@@ -15,7 +15,6 @@ RHDecayTracer::RHDecayTracer(edm::ParameterSet const& p) {
 }
 
 void RHDecayTracer::produce(edm::Event& fEvent, const edm::EventSetup&) {
-  edm::LogVerbatim("SimG4CoreCustomPhysics") << "RHDecayTracer::produce->";
   // Get data from shared manager
   std::vector<int> ids;
   std::vector<float> xs, ys, zs, ts, pxs, pys, pzs, es;

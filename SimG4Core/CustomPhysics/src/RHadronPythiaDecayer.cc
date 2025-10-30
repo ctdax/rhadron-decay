@@ -1,7 +1,6 @@
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayer.h"
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
 
-#include "CLHEP/Random/RandomEngine.h"
 #include "CLHEP/Vector/LorentzVector.h"
 #include "G4Track.hh"
 #include "G4DynamicParticle.hh"
@@ -17,8 +16,6 @@
 
 #include "Pythia8/Pythia.h"
 #include "Pythia8/RHadrons.h"
-#include "GeneratorInterface/Pythia8Interface/interface/P8RndmEngine.h"
-#include "FWCore/ServiceRegistry/interface/RandomEngineSentry.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "HepMC/GenEvent.h"
@@ -28,12 +25,6 @@
 #include <cstring>
 #include <cmath>
 #include <fstream>
-
-//////////////////////////
-// Author: C. Thompson  //
-// Date: May 29th, 2025 //
-//////////////////////////
-
 
 static inline unsigned short int nth_digit(const int& val,const unsigned short& n) { return (std::abs(val)/(int(std::pow(10,n-1))))%10;}
 
