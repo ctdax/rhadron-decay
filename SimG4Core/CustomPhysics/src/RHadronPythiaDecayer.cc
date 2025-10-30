@@ -104,7 +104,7 @@ G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4
   for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[secondaryDisplacementIndex]);
-    storeDecayInfo(aTrack); // Store info for the secondaries
+    storeDecayInfo(*secondary); // Store info for the secondary particle
     ++secondaryDisplacementIndex;
   }
 
