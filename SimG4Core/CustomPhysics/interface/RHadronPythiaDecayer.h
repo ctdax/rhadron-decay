@@ -10,6 +10,12 @@
 #include <utility>
 #include <memory>
 
+namespace HepMC {
+  class GenEvent;
+  class GenParticle;
+  class GenVertex;
+}
+
 namespace gen {
   class P8RndmEngine;
   typedef std::shared_ptr<P8RndmEngine> P8RndmEnginePtr;
@@ -31,25 +37,23 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
   public:
    RHadronPythiaDecayer(edm::ParameterSet const& p);
    virtual ~RHadronPythiaDecayer();
-
+   
    G4VParticleChange* DecayIt(const G4Track& aTrack, const G4Step& aStep) override; //What Geant calls to decay the Rhadron
-
    virtual G4DecayProducts* ImportDecayProducts(const G4Track&); //Tell pythia to decay the Rhadron and return the products in Geant format
 
   private:
    void RHadronToConstituents(Pythia8::Event& event); // Strip the RHadron down to its constituents in preperation for decaying the gluino or squark
 
    std::pair<int,int> fromIdWithSquark( int idRHad) const;
-
    std::pair<int,int> fromIdWithGluino( int idRHad, Pythia8::Rndm* rndmPtr) const;
 
    bool isGluinoRHadron(int pdgId) const;
-
    void fillParticle(const G4Track&, Pythia8::Event& event) const; //Fill a Pythia8 event with the information from a G4Track
-
    void pythiaDecay(const G4Track&, std::vector<G4DynamicParticle*> &); //Function to decay the RHadron and return products in G4 format
-
    void storeDecayInfo(const G4Track& aTrack); // Store decay information to be used later by produce
+
+   HepMC::GenParticle* findParentGenParticle(const G4Track& aTrack, HepMC::GenEvent* mcEvent);  
+   void addSecondariesToGenVertex(const G4Track& secondary, HepMC::GenVertex* decayVertex);
 
    std::unique_ptr<Pythia8::Pythia> pythia_; // Instance of pythia
    std::vector<G4ThreeVector> secondaryDisplacements_;

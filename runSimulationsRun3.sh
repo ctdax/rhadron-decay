@@ -9,11 +9,11 @@
 # CONTROL CENTER ----------------------
 
 mass=1800
-events=2
+events=1
 flavor="gluino" # gluino or stop
 cmEnergy="13TeV"
 #prefix="stop2t_or_b_andNeutralino_25ns_quickTest"
-prefix="g2qq_andNeutralino_50ns_run3_TESTINGROOTOUTPUT"
+prefix="g2qq_andNeutralino10GeV_5ns_2024run3_HEPMCOUTPUT"
 gensim=true
 reco=false
 eventdisplay=false # Set to true to create CSVs of the R-Hadron energy deposits during simulation for the purpose of an event display

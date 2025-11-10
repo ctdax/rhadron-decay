@@ -1,21 +1,18 @@
 #include "SimG4Core/CustomPhysics/interface/RHDecayTracer.h"
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "HepMC/GenEvent.h"
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 
 RHDecayTracer::RHDecayTracer(edm::ParameterSet const& p) {
-  produces<std::vector<int> >("RHadronDecayID");
-  produces<std::vector<float> >("RHadronDecayX");
-  produces<std::vector<float> >("RHadronDecayY");
-  produces<std::vector<float> >("RHadronDecayZ");
-  produces<std::vector<float> >("RHadronDecayTime");
-  produces<std::vector<float> >("RHadronDecayPx");
-  produces<std::vector<float> >("RHadronDecayPy");
-  produces<std::vector<float> >("RHadronDecayPz");
-  produces<std::vector<float> >("RHadronDecayE");
+  genToken_ = consumes<edm::HepMCProduct>(edm::InputTag("generator"));
 }
 
-void RHDecayTracer::produce(edm::Event& fEvent, const edm::EventSetup&) {
+void RHDecayTracer::produce(edm::Event& iEvent, const edm::EventSetup&) {
   // Get data from shared manager
+  edm::Handle<edm::HepMCProduct> genHandle;
+  iEvent.getByToken(genToken_, genHandle);
+  const HepMC::GenEvent* mcEvent = genHandle->GetEvent();
   std::vector<int> ids;
   std::vector<float> xs, ys, zs, ts, pxs, pys, pzs, es;
   
@@ -32,15 +29,15 @@ void RHDecayTracer::produce(edm::Event& fEvent, const edm::EventSetup&) {
   std::unique_ptr<std::vector<float>> pzsPtr(new std::vector<float>(pzs));
   std::unique_ptr<std::vector<float>> esPtr(new std::vector<float>(es));  
 
-  fEvent.put(std::move(idsPtr), "RHadronDecayID");
-  fEvent.put(std::move(xsPtr), "RHadronDecayX");
-  fEvent.put(std::move(ysPtr), "RHadronDecayY");
-  fEvent.put(std::move(zsPtr), "RHadronDecayZ");
-  fEvent.put(std::move(tsPtr), "RHadronDecayTime");
-  fEvent.put(std::move(pxsPtr), "RHadronDecayPx");
-  fEvent.put(std::move(pysPtr), "RHadronDecayPy");
-  fEvent.put(std::move(pzsPtr), "RHadronDecayPz");
-  fEvent.put(std::move(esPtr), "RHadronDecayE");  
+  iEvent.put(std::move(idsPtr), "RHadronDecayID");
+  iEvent.put(std::move(xsPtr), "RHadronDecayX");
+  iEvent.put(std::move(ysPtr), "RHadronDecayY");
+  iEvent.put(std::move(zsPtr), "RHadronDecayZ");
+  iEvent.put(std::move(tsPtr), "RHadronDecayTime");
+  iEvent.put(std::move(pxsPtr), "RHadronDecayPx");
+  iEvent.put(std::move(pysPtr), "RHadronDecayPy");
+  iEvent.put(std::move(pzsPtr), "RHadronDecayPz");
+  iEvent.put(std::move(esPtr), "RHadronDecayE");  
 
   // Clear data for the next event
   RHadronPythiaDecayDataManager::getInstance().clearDecayInfo();
