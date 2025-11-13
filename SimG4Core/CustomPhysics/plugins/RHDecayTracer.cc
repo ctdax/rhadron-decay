@@ -1,12 +1,9 @@
 #include "SimG4Core/CustomPhysics/interface/RHDecayTracer.h"
-#include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
-#include "SimG4Core/Notification/interface/TrackInformation.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/one/EDProducer.h"
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenVertex.h"
 #include "HepMC/GenParticle.h"
-#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 
 // Producer that adds R-hadron decay information from RHadronPythiaDecayer to the HepMC event
 using TrackData = RHadronPythiaDecayDataManager::TrackData;
