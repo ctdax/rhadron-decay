@@ -1,6 +1,4 @@
 #include "SimG4Core/CustomPhysics/interface/RHDecayTracer.h"
-#include "SimDataFormats/Track/interface/SimTrackContainer.h"
-#include "FWCore/Framework/interface/ESHandle.h"
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
 #include "SimG4Core/Notification/interface/TrackInformation.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -16,7 +14,7 @@ using TrackData = RHadronPythiaDecayDataManager::TrackData;
 RHDecayTracer::RHDecayTracer(edm::ParameterSet const& p)
     : edm::one::EDProducer<edm::one::SharedResources>() 
 {
-  genToken_      = consumes<edm::HepMCProduct>(edm::InputTag("generator"));
+  genToken_      = consumes<edm::HepMCProduct>(edm::InputTag("generatorSmeared"));
   simTrackToken_ = consumes<edm::SimTrackContainer>(edm::InputTag("g4SimHits"));
 }
 
@@ -26,17 +24,13 @@ void RHDecayTracer::produce(edm::Event& iEvent, const edm::EventSetup&) {
   std::map<int, std::vector<TrackData>> decayDaughters;
   RHadronPythiaDecayDataManager::getInstance().getDecayInfo(decayParents, decayDaughters);
 
-  // If no decays recorded, skip producer
+  // If no decays were recorded, skip the producer
   if (decayParents.empty()) return;
 
   // Get the HepMC event and SimTrack collection
-  edm::Handle<edm::HepMCProduct> genHandle;
-  edm::Handle<edm::SimTrackContainer> simTrackHandle;
-  iEvent.getByToken(genToken_, genHandle);
-  iEvent.getByToken(simTrackToken_, simTrackHandle);
-
-  HepMC::GenEvent* mcEvent = const_cast<HepMC::GenEvent*>(genHandle->GetEvent());
-  const edm::SimTrackContainer& simTracks = *simTrackHandle;
+  iEvent.getByToken(genToken_, genHandle_);
+  iEvent.getByToken(simTrackToken_, simTrackHandle_);
+  HepMC::GenEvent* mcEvent = const_cast<HepMC::GenEvent*>(genHandle_->GetEvent());
 
   // Loop over each decay parent and create a HepMC vertex with its daughters
   for (const auto& parentEntry : decayParents) {
@@ -44,7 +38,7 @@ void RHDecayTracer::produce(edm::Event& iEvent, const edm::EventSetup&) {
     const TrackData& parentData = parentEntry.second;
     
     // Get the SimTrack associated with the parent
-    const SimTrack* parentSimTrack = findSimTrack(parentData.trackID, simTracks);
+    const SimTrack* parentSimTrack = findSimTrack(parentData.trackID, *simTrackHandle_);
     if (!parentSimTrack) continue; // Skip if SimTrack not found
 
     // Get the corresponding HepMC GenParticle of the parent
@@ -67,8 +61,8 @@ void RHDecayTracer::produce(edm::Event& iEvent, const edm::EventSetup&) {
 }
 
 
-const SimTrack* RHDecayTracer::findSimTrack(int trackID, const edm::SimTrackContainer& simTracks) {
-    for (const auto& simTrack : simTracks) {
+const SimTrack* RHDecayTracer::findSimTrack(int trackID, const edm::SimTrackContainer& simTrackContainer) {
+    for (const auto& simTrack : simTrackContainer) {
         if (simTrack.trackId() == static_cast<unsigned int>(trackID)) return &simTrack;
     }
     return nullptr;

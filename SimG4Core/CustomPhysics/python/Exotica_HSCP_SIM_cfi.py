@@ -32,12 +32,8 @@ def customise(process):
                 traceParticle = cms.string ("((anti_)?~|tau1).*"), #this one regular expression is needed to look for ~HIP*, anti_~HIP*, ~tau1, anti_~tau1, ~g_rho0, ~g_Deltabar0, ~T_uu1++, etc
                 stopRegularParticles = cms.untracked.bool (False)
                 )        
-            ),
-            cms.PSet(
-                type = cms.string('RHDecayTracer')
             )
         )
-
         # defined custom Physics List
         process.g4SimHits.Physics.type = cms.string('SimG4Core/Physics/CustomPhysics')
         # add verbosity
@@ -57,6 +53,10 @@ def customise(process):
             process.customPhysicsSetup,
             
         )	
+
+        # Add Rhadron decay tracking
+        process.RHDecayTracer = cms.EDProducer("RHDecayTracer")
+        process.simulation_step *= process.RHDecayTracer
 
         return (process)
 

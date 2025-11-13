@@ -3,9 +3,9 @@
 
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
-#include "FWCore/Framework/interface/one/EDProducer.h"
-#include "SimG4Core/Watcher/interface/SimProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
 class SimTrack;
 
@@ -17,11 +17,10 @@ namespace edm {
   class HepMCProduct;
 }
 
-class RHDecayTracer : public SimProducer,
-                      public edm::one::EDProducer<edm::one::SharedResources> {
+class RHDecayTracer : public edm::one::EDProducer<edm::one::SharedResources> {
 public:
   RHDecayTracer(edm::ParameterSet const& p);
-  ~RHDecayTracer() noexcept override = default;
+  ~RHDecayTracer() override = default;
   void produce(edm::Event &, const edm::EventSetup &) override;
 
 private:
@@ -30,6 +29,8 @@ private:
 
   edm::EDGetTokenT<edm::HepMCProduct> genToken_;
   edm::EDGetTokenT<edm::SimTrackContainer> simTrackToken_;
+  edm::Handle<edm::HepMCProduct> genHandle_;
+  edm::Handle<edm::SimTrackContainer> simTrackHandle_;
 };
 
 #endif
