@@ -1,7 +1,5 @@
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayer.h"
 #include "SimG4Core/CustomPhysics/interface/RHadronPythiaDecayDataManager.h"
-#include "SimG4Core/Notification/interface/TrackInformation.h"
-#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 
 #include "CLHEP/Vector/LorentzVector.h"
 #include "G4Track.hh"
@@ -19,10 +17,6 @@
 #include "Pythia8/Pythia.h"
 #include "Pythia8/RHadrons.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-
-#include "HepMC/GenEvent.h"
-#include "HepMC/GenVertex.h"
-#include "HepMC/GenParticle.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -86,26 +80,17 @@ RHadronPythiaDecayer::~RHadronPythiaDecayer() {
 G4VParticleChange* RHadronPythiaDecayer::DecayIt(const G4Track& aTrack, const G4Step& aStep) {
   // First, clear the secondary displacements and call the standard DecayIt to generate secondaries
   secondaryDisplacements_.clear();
+  RHadronPythiaDecayDataManager::getInstance().addDecayParent(aTrack);
   G4VParticleChange* fParticleChangeForDecay = G4Decay::DecayIt(aTrack, aStep);
-
-  // Add the Rhadron decay information to the HepMC event
-  edm::Handle<edm::HepMCProduct> evt;
-  const HepMC::GenEvent* mcEvent = evt->GetEvent();
-  HepMC::GenParticle* parentGenParticle = findParentGenParticle(aTrack, mcEvent);
-  HepMC::GenVertex* decayVertex = new HepMC::GenVertex(HepMC::FourVector(aTrack.GetPosition().x(), aTrack.GetPosition().y(), aTrack.GetPosition().z(), aTrack.GetGlobalTime()))
-  decayVertex->add_particle_in(parentGenParticle);
 
   // Update the position of the secondaries in geant to match the potentially displaced positions from pythia. The list is stored in reverse order
   G4int secondaryDisplacementIndex = 0;
   for (G4int i = fParticleChangeForDecay->GetNumberOfSecondaries() - 1; i >= 0; --i) {
     G4Track* secondary = fParticleChangeForDecay->GetSecondary(i);
     secondary->SetPosition(secondary->GetPosition() + secondaryDisplacements_[secondaryDisplacementIndex]);
-    addSecondariesToGenVertex(*secondary, decayVertex);
+    RHadronPythiaDecayDataManager::getInstance().addDecayDaughter(*secondary);
     ++secondaryDisplacementIndex;
   }
-
-  parentGenParticle->set_status(2); // Mark the parent as decayed
-  mcEvent->add_vertex(decayVertex);
 
   return fParticleChangeForDecay;
 }
@@ -367,38 +352,4 @@ bool RHadronPythiaDecayer::isGluinoRHadron(int pdgId) const
 
   // This is not a gluino R-Hadron (probably a squark R-Hadron)
   return false;
-}
-
-
-void RHadronPythiaDecayer::storeDecayInfo(const G4Track& aTrack)
-{
-  int id = aTrack.GetDefinition()->GetPDGEncoding();
-  float x = aTrack.GetPosition().x()/CLHEP::cm;
-  float y = aTrack.GetPosition().y()/CLHEP::cm;
-  float z = aTrack.GetPosition().z()/CLHEP::cm;
-  float t = aTrack.GetGlobalTime()/CLHEP::ns;
-  float px = aTrack.GetMomentum().x()/CLHEP::GeV;
-  float py = aTrack.GetMomentum().y()/CLHEP::GeV;
-  float pz = aTrack.GetMomentum().z()/CLHEP::GeV;
-  float e  = aTrack.GetTotalEnergy()/CLHEP::GeV;
-
-  // Store in shared data manager
-  RHadronPythiaDecayDataManager::getInstance().addDecayInfo(id, x, y, z, t, px, py, pz, e);
-}
-
-
-HepMC::GenParticle* RHadronPythiaDecayer::findParentGenParticle(const G4Track& aTrack, HepMC::GenEvent* mcEvent) {
-    TrackInformation* trkInfo = dynamic_cast<TrackInformation*>(aTrack.GetUserInformation());
-    int mcTruthID = trkInfo->mcTruthID();
-    HepMC::GenParticle* genParticle = mcEvent->barcode_to_particle(mcTruthID);
-
-    return genParticle;
-}
-
-
-void RHadronPythiaDecayer::addSecondariesToGenVertex(const G4Track& secondary, HepMC::GenVertex* decayVertex) {
-  G4ThreeVector momentum = secondary.GetMomentum() * 1000.0; // Convert from GeV to MeV
-  double energy = secondary.GetTotalEnergy() * 1000.0; // Convert from GeV to MeV
-  HepMC::GenParticle* daughter = new HepMC::GenParticle(HepMC::FourVector(momentum.x(), momentum.y(), momentum.z(), energy), secondary.GetDefinition()->GetPDGEncoding(), 1);
-  decayVertex->add_particle_out(daughter);
 }

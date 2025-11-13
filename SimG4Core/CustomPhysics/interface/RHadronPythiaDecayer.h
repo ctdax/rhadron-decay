@@ -10,11 +10,6 @@
 #include <utility>
 #include <memory>
 
-namespace HepMC {
-  class GenEvent;
-  class GenParticle;
-  class GenVertex;
-}
 
 namespace gen {
   class P8RndmEngine;
@@ -50,10 +45,6 @@ class RHadronPythiaDecayer: public G4Decay, public G4VExtDecayer
    bool isGluinoRHadron(int pdgId) const;
    void fillParticle(const G4Track&, Pythia8::Event& event) const; //Fill a Pythia8 event with the information from a G4Track
    void pythiaDecay(const G4Track&, std::vector<G4DynamicParticle*> &); //Function to decay the RHadron and return products in G4 format
-   void storeDecayInfo(const G4Track& aTrack); // Store decay information to be used later by produce
-
-   HepMC::GenParticle* findParentGenParticle(const G4Track& aTrack, HepMC::GenEvent* mcEvent);  
-   void addSecondariesToGenVertex(const G4Track& secondary, HepMC::GenVertex* decayVertex);
 
    std::unique_ptr<Pythia8::Pythia> pythia_; // Instance of pythia
    std::vector<G4ThreeVector> secondaryDisplacements_;
