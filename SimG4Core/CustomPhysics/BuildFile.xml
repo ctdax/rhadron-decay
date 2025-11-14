@@ -7,7 +7,6 @@
 <use name="SimG4Core/Physics"/>
 <use name="SimG4Core/PhysicsLists"/>
 <use name="SimG4Core/Watcher"/>
-<use name="SimG4Core/Generators"/>
 <use name="GeneratorInterface/Pythia8Interface"/>
 <use name="geant4core"/>
 <use name="clhep"/>
